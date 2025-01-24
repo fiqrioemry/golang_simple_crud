@@ -167,6 +167,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
+
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
@@ -180,5 +182,5 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	json.NewEncoder(w).Encode(map[string]string{"token": token, "password" : credentials.Password})
 }

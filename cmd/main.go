@@ -20,11 +20,14 @@ func main(){
 
 	database.ConnectDatabase()
 
-	router := mux.NewRouter()
+	router 		:= mux.NewRouter().PathPrefix("/api")
+	auth 		:= router.PathPrefix("/auth").Subrouter()
+	protected 	:= router.PathPrefix("").Subrouter()
 
-	router.HandleFunc("/register/seeker", handlers.SeekerRegister).Methods("POST")
-	router.HandleFunc("/register/employer", handlers.EmployerRegister).Methods("POST")
-	router.HandleFunc("/login", handlers.Login).Methods("POST")
+	auth.HandleFunc("/register/seeker", handlers.SeekerRegister).Methods("POST")
+	auth.HandleFunc("/register/employer", handlers.EmployerRegister).Methods("POST")
+	auth.HandleFunc("/login", handlers.Login).Methods("POST")
+	auth.protected.HandleFunc("/me", handlers.AuthMe).Methods("POST")
 
 	port := os.Getenv("PORT")
 	if port == ""{
