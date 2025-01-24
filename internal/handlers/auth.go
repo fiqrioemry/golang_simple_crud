@@ -5,8 +5,8 @@ import (
 	"golang_project/internal/auth"
 	"golang_project/internal/database"
 	"golang_project/internal/models"
-
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -150,6 +150,13 @@ func EmployerRegister(w http.ResponseWriter, r *http.Request) {
 
 // Login handles user login and JWT generation.
 func Login(w http.ResponseWriter, r *http.Request) {
+	// Validasi metode HTTP
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Dekode body request ke dalam struct credentials
 	var credentials struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -160,27 +167,50 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find user by email
+	// Cari pengguna berdasarkan email
 	var user models.User
 	if err := database.DB.Where("email = ?", credentials.Email).First(&user).Error; err != nil {
-		http.Error(w, "Invalid email ", http.StatusUnauthorized)
+		http.Error(w, "Invalid email or user not found", http.StatusUnauthorized)
 		return
 	}
 
-
-
-	// Check password
+	// Verifikasi password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
-	// Generate JWT token
-	token, err := auth.GenerateToken(user.ID, string(user.Role))
+	// Generate akses token (JWT)
+	accessToken, err := auth.GenerateAccessToken(user.ID, string(user.Role))
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": token, "password" : credentials.Password})
+	// Generate refresh token
+	refreshToken, err := auth.GenerateRefreshToken(user.ID, string(user.Role))
+	if err != nil {
+		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	// Set refresh token sebagai cookie (opsional)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    refreshToken,
+		Expires:  time.Now().Add(7 * 24 * time.Hour), // Refresh token berlaku 7 hari
+		HttpOnly: true,                               // Hanya dapat diakses oleh server
+		Secure:   false,                              // Set true jika menggunakan HTTPS
+		Path:     "/",
+	})
+
+	// Kirimkan respons dengan akses token dan refresh token
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":      "Login is successful",
+		"accessToken":  accessToken,
+	})
 }
+
+
