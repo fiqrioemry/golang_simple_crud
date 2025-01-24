@@ -4,15 +4,22 @@ import (
 	"time"
 )
 
+type Role string
+
+const (
+	Seeker 		Role = "seeker"
+	Employer 	Role = "employer"
+)
+
 // User represents a user in the system (Employer or Job Seeker).
 type User struct {
-	ID       uint           `gorm:"primaryKey"`
-	Name     string         `gorm:"size:100;not null"`
-	Email    string         `gorm:"unique;not null"`
-	Password string         `gorm:"not null"` // Store hashed passwords
-	Role     string         `gorm:"size:20;not null"` // Employer or Job Seeker
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID       	uint           `gorm:"primaryKey"`
+	Name     	string         `gorm:"size:100;not null"`
+	Email    	string         `gorm:"unique;not null"`
+	Password 	string         `gorm:"not null"`
+	Role     	Role      	   `gorm:"not null;default:'seeker'"`
+	CreatedAt 	time.Time
+	UpdatedAt 	time.Time
 }
 
 // Profile represents a job seeker's profile.
