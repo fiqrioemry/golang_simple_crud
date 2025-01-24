@@ -215,39 +215,41 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// AuthMe handles the authenticated user info retrieval.
 func AuthMe(w http.ResponseWriter, r *http.Request) {
+	// Retrieve claims from context
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	}
-
-	jsonResponse := map[string]interface{}{
-		"user_id": claims["user_id"],
-	}
-
-	var user models.User
-	if err := database.DB.Where("ID = ?", jsonResponse["user_id"]).First(&user).Error; err != nil {
-		http.Error(w, "Invalid email or user not found", http.StatusUnauthorized)
 		return
 	}
 
-	payload := map[string]interface{
-		"user_id" 	: user.ID,
-		"email"		: user.Email,
-		"name"		: user.Name
+	// Retrieve user ID from claims
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"payload":  user,
-	})
 
+	// Fetch user from the database
+	var user models.User
+	if err := database.DB.Where("ID = ?", uint(userID)).First(&user).Error; err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Prepare payload
+	payload := map[string]interface{}{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"name":    user.Name,
+	}
+
+	// Set response header and send JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message":      "Login is successful",
-		"accessToken":  accessToken,
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"payload": payload,
 	})
 }
-
 

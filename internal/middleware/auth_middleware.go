@@ -48,6 +48,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// GetUserFromContext retrieves the JWT claims from the request context.
 func GetUserFromContext(r *http.Request) (jwt.MapClaims, error) {
 	claims, ok := r.Context().Value(ContextUserKey).(jwt.MapClaims)
 	if !ok {

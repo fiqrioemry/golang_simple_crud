@@ -3,6 +3,7 @@ package main
 import (
 	"golang_project/internal/database"
 	"golang_project/internal/handlers"
+	"golang_project/internal/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -25,8 +26,11 @@ func main(){
 	router.HandleFunc("/register/seeker", handlers.SeekerRegister).Methods("POST")
 	router.HandleFunc("/register/employer", handlers.EmployerRegister).Methods("POST")
 	router.HandleFunc("/login", handlers.Login).Methods("POST")
-	router.HandleFunc("/login", handlers.Login).Methods("POST")
-
+	
+	// Protected endpoint with middleware
+	protected := router.PathPrefix("/").Subrouter()
+	protected.Use(middleware.JWTMiddleware)
+	protected.HandleFunc("/me", handlers.AuthMe).Methods("POST")
 
 	port := os.Getenv("PORT")
 	if port == ""{
