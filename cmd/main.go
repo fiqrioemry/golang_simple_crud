@@ -25,6 +25,7 @@ func main(){
 	router.HandleFunc("/register/seeker", handlers.SeekerRegister).Methods("POST")
 	router.HandleFunc("/register/employer", handlers.EmployerRegister).Methods("POST")
 	router.HandleFunc("/login", handlers.Login).Methods("POST")
+	router.HandleFunc("/login", handlers.Login).Methods("POST")
 
 
 	port := os.Getenv("PORT")

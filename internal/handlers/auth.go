@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"golang_project/internal/auth"
 	"golang_project/internal/database"
+	"golang_project/internal/middleware"
 	"golang_project/internal/models"
 	"net/http"
 	"time"
@@ -205,6 +206,42 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Kirimkan respons dengan akses token dan refresh token
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":      "Login is successful",
+		"accessToken":  accessToken,
+	})
+}
+
+
+func AuthMe(w http.ResponseWriter, r *http.Request) {
+	claims, err := middleware.GetUserFromContext(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	}
+
+	jsonResponse := map[string]interface{}{
+		"user_id": claims["user_id"],
+	}
+
+	var user models.User
+	if err := database.DB.Where("ID = ?", jsonResponse["user_id"]).First(&user).Error; err != nil {
+		http.Error(w, "Invalid email or user not found", http.StatusUnauthorized)
+		return
+	}
+
+	payload := map[string]interface{
+		"user_id" 	: user.ID,
+		"email"		: user.Email,
+		"name"		: user.Name
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"payload":  user,
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
