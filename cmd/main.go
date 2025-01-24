@@ -2,6 +2,7 @@ package main
 
 import (
 	"golang_project/internal/database"
+	"golang_project/internal/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -11,23 +12,26 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	// load environtment variable
 	err := godotenv.Load()
+
 	if err != nil {
-		log.Println("Warning: .env file not found")
+		log.Println("Warning : .Env file not found")
 	}
+
 
 	// Connect to the database
 	database.ConnectDatabase()
 
-	// Create a new router
+	// create new router
 	router := mux.NewRouter()
 
-	// Test route
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Job Portal API is running!"))
-	}).Methods("GET")
 
+	// define API endpoint
+	router.HandleFunc("/register", handlers.Register).Methods("POST")
+	router.HandleFunc("/login", handlers.Login).Methods("POST")
+
+	
 	// Start the server
 	port := os.Getenv("PORT")
 	if port == "" {

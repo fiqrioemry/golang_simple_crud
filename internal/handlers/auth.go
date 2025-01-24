@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"job-portal-api/internal/auth"
-	"job-portal-api/internal/database"
-	"job-portal-api/internal/models"
+	"golang_project/internal/auth"
+	"golang_project/internal/database"
+	"golang_project/internal/models"
+
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
