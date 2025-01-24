@@ -11,16 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Register handles user registration.
-
-func Register(w http.ResponseWriter, r *http.Request) {
-	// Check if request body is empty
-	if r.Body == nil {
-		http.Error(w, "Request body is empty", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close() // Close the body when the function exits
+// Register : Seeker
+func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 
@@ -32,6 +24,76 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	// Check for required fields (e.g., Name, Email, and Password)
 	if user.Name == "" || user.Email == "" || user.Password == "" {
+		http.Error(w, "All field are required", http.StatusBadRequest)
+		return 
+	}
+	
+
+	// Check if the email is already registered
+	var existingUser models.User
+	if err := database.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+		http.Error(w, "Email is already registered", http.StatusConflict)
+		return
+	}
+
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	user.Password 	= string(hashedPassword)
+	user.Role = models.Seeker
+
+	// Use a database transaction
+	tx := database.DB.Begin() // Start transaction
+	if tx.Error != nil {
+		http.Error(w, "Failed to start database transaction", http.StatusInternalServerError)
+		return
+	}
+
+	// Save user to the database
+	if err := tx.Create(&user).Error; err != nil {
+		tx.Rollback() // Rollback if error
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
+	}
+
+	profile := models.Profile{
+		UserID : user.ID,
+	}
+
+	if err := tx.Create(&profile).Error; err != nil {
+		tx.Rollback()
+		http.Error(w, "Failed to create profile", http.StatusInternalServerError)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+}
+
+
+// Register : Employer
+func EmployerRegister(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	var company models.Company
+
+	// Decode the request body into the user struct
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Check required field
+	if user.Name == "" || user.Email == "" || user.Password == "" || company.Name ==  "" || company.Description == "" || company.Location == "" {
 		http.Error(w, "All field are required", http.StatusBadRequest)
 		return
 	}
@@ -49,10 +111,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
-	
+
 	user.Password 	= string(hashedPassword)
-	user.Role		= models.Employer
-	
+	user.Role = models.Employer
 
 	// Use a database transaction
 	tx := database.DB.Begin() // Start transaction
@@ -66,6 +127,13 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback() // Rollback the transaction if there is an error
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
+	}
+
+	company.UserID = user.ID
+
+	if err := tx.Create(&company).Error; err != nil {
+		tx.Rollback()
+		http.Error(w, "Failed to create company", http.StatusInternalServerError)
 	}
 
 	// Commit the transaction
@@ -95,18 +163,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Find user by email
 	var user models.User
 	if err := database.DB.Where("email = ?", credentials.Email).First(&user).Error; err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid email ", http.StatusUnauthorized)
 		return
 	}
 
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
 	// Generate JWT token
-	token, err := auth.GenerateToken(user.ID, user.Role)
+	token, err := auth.GenerateToken(user.ID, string(user.Role))
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return

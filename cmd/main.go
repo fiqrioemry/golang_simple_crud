@@ -14,11 +14,9 @@ import (
 func main() {
 	// load environtment variable
 	err := godotenv.Load()
-
 	if err != nil {
-		log.Println("Warning : .Env file not found")
+		log.Fatalf("Warning : .env file not found %v", err)
 	}
-
 
 	// Connect to the database
 	database.ConnectDatabase()
@@ -28,7 +26,8 @@ func main() {
 
 
 	// define API endpoint
-	router.HandleFunc("/register", handlers.Register).Methods("POST")
+	router.HandleFunc("/auth/register/seeker", handlers.SeekerRegister).Methods("POST")
+	router.HandleFunc("/auth/register/employer", handlers.EmployerRegister).Methods("POST")
 	router.HandleFunc("/login", handlers.Login).Methods("POST")
 
 	
