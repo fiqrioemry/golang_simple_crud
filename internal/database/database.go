@@ -1,4 +1,3 @@
-// /internal/database/database.go
 package database
 
 import (
@@ -6,32 +5,28 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
+	"job-portal-api/internal/models"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
-func InitDB() {
-    err := godotenv.Load() 
-    if err != nil {
-        log.Fatal("Error loading .env file")
-    }
+// ConnectDatabase initializes the database connection and runs migrations.
+func ConnectDatabase() {
+	dsn := os.Getenv("MYSQL_DSN") // Example: "user:password@tcp(localhost:3306)/job_portal?charset=utf8mb4&parseTime=True&loc=Local"
+	var err error
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
 
-    dbUser := os.Getenv("DB_USER")
-    dbPassword := os.Getenv("DB_PASSWORD")
-    dbHost := os.Getenv("DB_HOST")
-    dbPort := os.Getenv("DB_PORT")
-    dbName := os.Getenv("DB_NAME")
+	// Auto-migrate models
+	err = DB.AutoMigrate(&models.User{}, &models.Profile{}, &models.Experience{}, &models.Company{}, &models.Job{}, &models.Application{})
+	if err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
 
-    dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", 
-                       dbUser, dbPassword, dbHost, dbPort, dbName)
-
-    var err2 error
-    DB, err2 = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-    if err2 != nil {
-        log.Fatal("Failed to connect to the database:", err2)
-    }
-    log.Println("Connected to the database successfully")
+	fmt.Println("Database connection established and migrations applied!")
 }
