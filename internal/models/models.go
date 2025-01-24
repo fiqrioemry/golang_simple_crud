@@ -55,7 +55,7 @@ type Job struct {
 	CompanyID   uint           `gorm:"not null"`
 	Title       string         `gorm:"size:100;not null"`
 	Description string         `gorm:"type:text"`
-	Location    string         `gorm:"size:100"`
+	Location    string         `gorm:"type:text"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

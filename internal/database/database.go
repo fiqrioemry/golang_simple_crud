@@ -2,10 +2,9 @@ package database
 
 import (
 	"fmt"
+	"golang_project/internal/models"
 	"log"
 	"os"
-
-	"job-portal-api/internal/models"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
