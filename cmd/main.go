@@ -41,7 +41,7 @@ func main(){
 	// seeker
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
 	protected.HandleFunc("/api/applications/user/{id}", handlers.GetApplicationsByUserID).Methods("GET") 
-	// protected.HandleFunc("/api/user/employer", handlers.GetUserSeekerProfile).Methods("GET")  
+	// protected.HandleFunc("/api/user/seeker", handlers.GetUserSeekerProfile).Methods("GET")  
 	// protected.HandleFunc("/api/user/employer", handlers.UpdateUserSeekerProfile).Methods("PUT")  
 
 
@@ -54,7 +54,7 @@ func main(){
 
 	// protected.HandleFunc("/api/user/employer", handlers.GetUserEmployerProfile).Methods("GET")  
 	// protected.HandleFunc("/api/user/employer", handlers.EditUserEmployerProfile).Methods("PUT")  
-		// router.HandleFunc("/api/jobs/employer", handlers.GetAllEmployerPostedJobs).Methods("GET") 
+	// router.HandleFunc("/api/jobs/employer", handlers.GetAllEmployerPostedJobs).Methods("GET") 
 
 
 

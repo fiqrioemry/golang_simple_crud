@@ -28,24 +28,13 @@ func init() {
 	JWTSecret = []byte(secret)
 }
 
-// GenerateToken generates a new JWT for a given user ID and role.
-func GenerateAccessToken(userID uint, role string) (string, error) {
+
+// GenerateToken generates a new JWT for a given user ID and role with a specified expiration duration.
+func GenerateToken(userID uint, role string, expiration time.Duration) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(), // Token valid for 24 hours
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(JWTSecret)
-}
-
-// GenerateToken generates a new JWT for a given user ID and role.
-func GenerateRefreshToken(userID uint, role string) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"role":    role,
-		"exp":     time.Now().Add(24 * 7 * time.Hour).Unix(), // Token valid for 24 hours
+		"exp":     time.Now().Add(expiration).Unix(), // Configurable expiration
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
