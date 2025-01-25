@@ -214,9 +214,9 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 	// Respond with success
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message":         "Application statuses updated successfully",
-		"updated_status":  payload.Status,
-		"application_ids": payload.ApplicationIDs,
+		"message"			: "Application statuses updated successfully",
+		"updated_status"	: payload.Status,
+		"application_ids"	: payload.ApplicationIDs,
 	})
 }
 

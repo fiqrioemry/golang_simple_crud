@@ -1,3 +1,14 @@
+package handlers
+
+import (
+	"encoding/json"
+	"golang_project/internal/database"
+	"golang_project/internal/middleware"
+	"golang_project/internal/models"
+	"net/http"
+)
+
+
 func GetUserSeekerProfile(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is a seeker
 	claims, err := middleware.GetUserFromContext(r)

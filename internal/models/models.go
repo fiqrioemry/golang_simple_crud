@@ -25,13 +25,12 @@ type User struct {
 	UpdatedAt time.Time
 }
 
-// for seeker
 type Profile struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null;unique"`
+	UserID    uint      `gorm:"not null;unique;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"` 
 	Bio       string    `gorm:"type:text"`
 	Resume    string    `gorm:"type:text"`
-	Skills    Skills    `gorm:"type:json;default:null" json:"skills"`	
+	Skills    Skills    `gorm:"type:json;default:null" json:"skills"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -129,11 +128,10 @@ type Application struct {
 }
 
 
-
 // ApplicationResponse defines the structure of the application data sent to the client.
 type ApplicationResponse struct {
-	ID        uint   `json:"id"`
-	Status    string `json:"status"`
+	ID        uint      `json:"id"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
