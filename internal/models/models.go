@@ -31,7 +31,7 @@ type Profile struct {
 	UserID    uint      `gorm:"not null;unique"`
 	Bio       string    `gorm:"type:text"`
 	Resume    string    `gorm:"type:text"`
-	Skills    Skills    `gorm:"type:json;default:'[]'" json:"skills"` // Allow NULL for skills
+	Skills      Skills    `gorm:"type:json;default:null" json:"skills"`	
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

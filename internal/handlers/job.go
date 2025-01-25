@@ -88,7 +88,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 // GetAllJobs handles getting all available jobs (public access).
 func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	var jobs []models.Job
-	if err := database.DB.Find(&jobs).Error; err != nil {
+	if err := database.DB.Preload("Company").Find(&jobs).Error; err != nil {
 		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
 		return
 	}
@@ -103,7 +103,7 @@ func GetJobByID(w http.ResponseWriter, r *http.Request) {
 	jobID := mux.Vars(r)["id"]
 
 	var job models.Job
-	if err := database.DB.First(&job, jobID).Error; err != nil {
+	if err := database.DB.Preload("Company").First(&job, jobID).Error; err != nil {
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
@@ -111,7 +111,6 @@ func GetJobByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(job)
 }
-
 
 // UpdateJob handles updating a job posting (employer only).
 func UpdateJob(w http.ResponseWriter, r *http.Request) {
