@@ -10,11 +10,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// ApplyToJob handles job application by job seekers.
 func ApplyToJob(w http.ResponseWriter, r *http.Request) {
-	// Check if the user is a job seeker
 	claims, err := middleware.GetUserFromContext(r)
-	if err != nil || claims["role"] != "job_seeker" {
+	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Job seeker only", http.StatusUnauthorized)
 		return
 	}
@@ -69,11 +67,13 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(applications)
 }
+
+
 // GetApplicationsByUserID handles getting all applications for a specific user (job seeker only).
 func GetApplicationsByUserID(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is a job seeker
 	claims, err := middleware.GetUserFromContext(r)
-	if err != nil || claims["role"] != "job_seeker" {
+	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Job seeker only", http.StatusUnauthorized)
 		return
 	}

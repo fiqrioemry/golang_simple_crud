@@ -53,7 +53,7 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashedPassword),
-		Role:     "job_seeker", // Explicitly set the role
+		Role:     "seeker", // Explicitly set the role
 	}
 
 	// Use a database transaction
@@ -70,7 +70,7 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("check user ID :",user.ID)
-	
+
 	profile := models.Profile{
 		UserID: user.ID,
 	}
@@ -251,10 +251,10 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare payload
 	payload := map[string]interface{}{
-		"user_id": user.ID,
-		"email":   user.Email,
-		"name":    user.Name,
-		"role" : user.Role,
+		"user_id"	: user.ID,
+		"email"		: user.Email,
+		"name"		: user.Name,
+		"role" 		: user.Role,
 	}
 
 	// Set response header and send JSON response
