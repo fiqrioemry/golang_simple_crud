@@ -24,14 +24,15 @@ type User struct {
 
 // Profile represents a job seeker's profile.
 type Profile struct {
-	ID      	uint           `gorm:"primaryKey"`
-	UserID   	uint           `gorm:"not null;unique"`
-	Bio      	string         `gorm:"type:text"`
-	Resume	 	string			`gorm:"type:text"`
-	Skills   	[]string  `gorm:"type:json;not null" json:"skills"`
+	ID      	uint            `gorm:"primaryKey"`
+	UserID   	uint            `gorm:"not null;unique"`
+	Bio      	string       	`gorm:"type:text"`
+	Resume	 	string		  	`gorm:"type:text"`
+	Skills   	[]string  		`gorm:"type:json" json:"skills"`
 	CreatedAt 	time.Time
 	UpdatedAt 	time.Time
 }
+
 
 // Experience represents a job seeker's work experience.
 type Experience struct {
@@ -44,6 +45,7 @@ type Experience struct {
 	CreatedAt 	time.Time
 	UpdatedAt 	time.Time
 }
+
 
 // Company represents an employer's company.
 type Company struct {

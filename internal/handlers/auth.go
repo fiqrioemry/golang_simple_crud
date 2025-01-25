@@ -63,19 +63,19 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save user to the database
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	// Create an empty profile for the job seeker
+	log.Println("check user ID :",user.ID)
+	
 	profile := models.Profile{
 		UserID: user.ID,
 	}
-
-	// Save profile to the database
+	
+	
 	if err := tx.Create(&profile).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, "Failed to create profile", http.StatusInternalServerError)
