@@ -15,41 +15,49 @@ import (
 
 // Register : Seeker
 func SeekerRegister(w http.ResponseWriter, r *http.Request) {
+	// Define a struct to handle the request body
+	var req struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 
-	var user models.User
-
-	// Decode the request body into the user struct
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	// Decode the request body into the struct
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Check for required fields (e.g., Name, Email, and Password)
-	if user.Name == "" || user.Email == "" || user.Password == "" {
-		http.Error(w, "All field are required", http.StatusBadRequest)
-		return 
+	// Validate required fields
+	if req.Name == "" || req.Email == "" || req.Password == "" {
+		http.Error(w, "All fields are required", http.StatusBadRequest)
+		return
 	}
-	
 
 	// Check if the email is already registered
 	var existingUser models.User
-	if err := database.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		http.Error(w, "Email is already registered", http.StatusConflict)
 		return
 	}
 
 	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
-	user.Password 	= string(hashedPassword)
-	user.Role = models.Seeker
+	// Create the user model
+	user := models.User{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Role:     "job_seeker", // Explicitly set the role
+	}
 
 	// Use a database transaction
-	tx := database.DB.Begin() // Start transaction
+	tx := database.DB.Begin()
 	if tx.Error != nil {
 		http.Error(w, "Failed to start database transaction", http.StatusInternalServerError)
 		return
@@ -57,18 +65,21 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Save user to the database
 	if err := tx.Create(&user).Error; err != nil {
-		tx.Rollback() // Rollback if error
+		tx.Rollback()
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
+	// Create an empty profile for the job seeker
 	profile := models.Profile{
-		UserID : user.ID,
+		UserID: user.ID,
 	}
 
+	// Save profile to the database
 	if err := tx.Create(&profile).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, "Failed to create profile", http.StatusInternalServerError)
+		return
 	}
 
 	// Commit the transaction
@@ -83,39 +94,44 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
 // Register : Employer
 func EmployerRegister(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	var company models.Company
+	// Define a structure to handle the nested request body
+	var req struct {
+		User    models.User    `json:"user"`
+		Company models.Company `json:"company"`
+	}
 
-	// Decode the request body into the user struct
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	// Decode the request body into the struct
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Check required field
-	if user.Name == "" || user.Email == "" || user.Password == "" || company.Name ==  "" || company.Description == "" || company.Location == "" {
-		http.Error(w, "All field are required", http.StatusBadRequest)
+	// Validate required fields
+	if req.User.Name == "" || req.User.Email == "" || req.User.Password == "" ||
+		req.Company.Name == "" || req.Company.Description == "" || req.Company.Location == "" {
+		http.Error(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
 
 	// Check if the email is already registered
 	var existingUser models.User
-	if err := database.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+	if err := database.DB.Where("email = ?", req.User.Email).First(&existingUser).Error; err == nil {
 		http.Error(w, "Email is already registered", http.StatusConflict)
 		return
 	}
 
 	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.User.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
-	user.Password 	= string(hashedPassword)
-	user.Role = models.Employer
+	req.User.Password = string(hashedPassword)
+	req.User.Role = "employer"
 
 	// Use a database transaction
 	tx := database.DB.Begin() // Start transaction
@@ -125,17 +141,20 @@ func EmployerRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save user to the database
-	if err := tx.Create(&user).Error; err != nil {
+	if err := tx.Create(&req.User).Error; err != nil {
 		tx.Rollback() // Rollback the transaction if there is an error
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	company.UserID = user.ID
+	// Associate the company with the user
+	req.Company.UserID = req.User.ID
 
-	if err := tx.Create(&company).Error; err != nil {
+	// Save company to the database
+	if err := tx.Create(&req.Company).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, "Failed to create company", http.StatusInternalServerError)
+		return
 	}
 
 	// Commit the transaction
@@ -146,7 +165,7 @@ func EmployerRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with success
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Employer registered successfully"})
 }
 
 
@@ -200,7 +219,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with the access token
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
+	json.NewEncoder(w).Encode(map[string]string{"message" : "Login is successfully", "access_token": accessToken})
 }
 
 
@@ -245,3 +264,31 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
+// GetRefreshToken handles refreshing the access token using the refresh token.
+func GetRefreshToken(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the refresh token from the cookies
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		http.Error(w, "Refresh token not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Validate the refresh token
+	claims, err := auth.ValidateToken(cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate a new Access Token
+	accessToken, err := auth.GenerateToken(uint(claims["user_id"].(float64)), claims["role"].(string), 24*time.Hour)
+	if err != nil {
+		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with the new access token
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
+}

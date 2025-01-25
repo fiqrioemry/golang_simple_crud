@@ -28,6 +28,7 @@ func main(){
 	router.HandleFunc("/api/login", handlers.Login).Methods("POST")
 	router.HandleFunc("/api/jobs", handlers.GetAllJobs).Methods("GET") 
 	router.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")  
+	router.HandleFunc("/refresh", handlers.GetRefreshToken).Methods("POST")
 	// router.HandleFunc("/api/jobs/employer/{id}", handlers.GetAllEmployerJobs).Methods("GET") 
 
 
@@ -35,14 +36,14 @@ func main(){
 	protected := router.PathPrefix("/").Subrouter()
 	protected.Use(middleware.JWTMiddleware)
 	protected.HandleFunc("/me", handlers.AuthMe).Methods("POST")
-	// protected.HandleFunc("/refresh", handlers.RefreshToken).Methods("POST")
+
 
 
 	// seeker
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
 	protected.HandleFunc("/api/applications/user/{id}", handlers.GetApplicationsByUserID).Methods("GET") 
 	// protected.HandleFunc("/api/user/seeker", handlers.GetUserSeekerProfile).Methods("GET")  
-	// protected.HandleFunc("/api/user/employer", handlers.UpdateUserSeekerProfile).Methods("PUT")  
+	// protected.HandleFunc("/api/user/seeker", handlers.UpdateUserSeekerProfile).Methods("PUT")  
 
 
 	// employer
