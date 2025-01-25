@@ -33,17 +33,17 @@ func main(){
 	protected.HandleFunc("/me", handlers.AuthMe).Methods("POST")
 	// protected.HandleFunc("/refresh", handlers.RefreshToken).Methods("POST")
 	// seeker
+	protected.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")  // for public acces to a detail job requirement
+	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
 
 
 	// employer
 	protected.HandleFunc("/api/jobs", handlers.CreateJob).Methods("POST")  
+	protected.HandleFunc("/api/jobs/{id}", handlers.UpdateJob).Methods("PUT") 
+	protected.HandleFunc("/api/jobs/{id}", handlers.DeleteJob).Methods("DELETE") 
 
 
  
-	protected.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")  
-	protected.HandleFunc("/api/jobs/{id}", handlers.UpdateJob).Methods("PUT") 
-	protected.HandleFunc("/api/jobs/{id}", handlers.DeleteJob).Methods("DELETE") 
-	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
 	protected.HandleFunc("/api/applications/job/{id}", handlers.GetApplicationsByJobID).Methods("GET") 
 	protected.HandleFunc("/api/applications/user/{id}", handlers.GetApplicationsByUserID).Methods("GET") 
 	protected.HandleFunc("/api/applications/user", handlers.GetApplicationsByUserID).Methods("GET") 
