@@ -6,6 +6,7 @@ import (
 	"golang_project/internal/database"
 	"golang_project/internal/middleware"
 	"golang_project/internal/models"
+	"log"
 	"net/http"
 	"time"
 
@@ -218,12 +219,15 @@ func Login(w http.ResponseWriter, r *http.Request) {
 // AuthMe handles the authenticated user info retrieval.
 func AuthMe(w http.ResponseWriter, r *http.Request) {
 	// Retrieve claims from context
+	log.Println(r)
+	log.Println("Checking")
+
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
+	log.Println(claims)
 	// Retrieve user ID from claims
 	userID, ok := claims["user_id"].(float64)
 	if !ok {

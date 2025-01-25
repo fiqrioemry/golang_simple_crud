@@ -26,11 +26,28 @@ func main(){
 	router.HandleFunc("/register/seeker", handlers.SeekerRegister).Methods("POST")
 	router.HandleFunc("/register/employer", handlers.EmployerRegister).Methods("POST")
 	router.HandleFunc("/login", handlers.Login).Methods("POST")
-	
+	router.HandleFunc("/api/jobs", handlers.GetAllJobs).Methods("GET") 
 	// Protected endpoint with middleware
 	protected := router.PathPrefix("/").Subrouter()
 	protected.Use(middleware.JWTMiddleware)
 	protected.HandleFunc("/me", handlers.AuthMe).Methods("POST")
+	// protected.HandleFunc("/refresh", handlers.RefreshToken).Methods("POST")
+	// seeker
+
+
+	// employer
+	protected.HandleFunc("/api/jobs", handlers.CreateJob).Methods("POST")  
+
+
+ 
+	protected.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")  
+	protected.HandleFunc("/api/jobs/{id}", handlers.UpdateJob).Methods("PUT") 
+	protected.HandleFunc("/api/jobs/{id}", handlers.DeleteJob).Methods("DELETE") 
+	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
+	protected.HandleFunc("/api/applications/job/{id}", handlers.GetApplicationsByJobID).Methods("GET") 
+	protected.HandleFunc("/api/applications/user/{id}", handlers.GetApplicationsByUserID).Methods("GET") 
+	protected.HandleFunc("/api/applications/user", handlers.GetApplicationsByUserID).Methods("GET") 
+	protected.HandleFunc("/api/applications/{id}/status", handlers.UpdateApplicationStatus).Methods("PUT") 
 
 	port := os.Getenv("PORT")
 	if port == ""{
