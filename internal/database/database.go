@@ -1,3 +1,18 @@
+package database
+
+import (
+	"fmt"
+	"golang_project/internal/models"
+	"log"
+	"os"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+var DB *gorm.DB
+
+// ConnectDatabase initializes the database connection and runs migrations.
 func ConnectDatabase() {
 	dsn := os.Getenv("MYSQL_DSN")
 	var err error

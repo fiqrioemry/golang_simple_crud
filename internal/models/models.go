@@ -27,7 +27,7 @@ type User struct {
 
 type Profile struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null;unique;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"` 
+	UserID    uint      `gorm:"not null;unique;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
 	Bio       string    `gorm:"type:text"`
 	Resume    string    `gorm:"type:text"`
 	Skills    Skills    `gorm:"type:json;default:null" json:"skills"`
@@ -114,14 +114,13 @@ type JobResponse struct {
 }
 
 
-// Application represents a job application by a job seeker.
 type Application struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	JobID     uint      `gorm:"not null" json:"job_id"`
 	UserID    uint      `gorm:"not null" json:"user_id"`
-	User      User      `gorm:"foreignKey:UserID" json:"user"`         // Include related user data
-	Profile   Profile   `gorm:"foreignKey:UserID;references:UserID" json:"profile"` // Include related profile data
-	Job       Job       `gorm:"foreignKey:JobID" json:"job"`           // Include related job data
+	User      User      `gorm:"foreignKey:UserID" json:"user"` 
+	Profile   Profile   `gorm:"foreignKey:UserID;references:UserID" json:"profile"` 
+	Job       Job       `gorm:"foreignKey:JobID" json:"job"` 
 	Status    string    `gorm:"size:20;default:'Pending'" json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
