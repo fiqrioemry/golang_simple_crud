@@ -254,6 +254,7 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 		"user_id": user.ID,
 		"email":   user.Email,
 		"name":    user.Name,
+		"role" : user.Role,
 	}
 
 	// Set response header and send JSON response
