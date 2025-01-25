@@ -27,7 +27,7 @@ type User struct {
 
 type Profile struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null;unique;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	UserID    uint      `gorm:"not null:unique"` 
 	Bio       string    `gorm:"type:text"`
 	Resume    string    `gorm:"type:text"`
 	Skills    Skills    `gorm:"type:json;default:null" json:"skills"`
@@ -62,7 +62,7 @@ func (s *Skills) Scan(value interface{}) error {
 
 type Experience struct {
 	ID        uint       `gorm:"primaryKey"`
-	ProfileID uint       `gorm:"not null"`
+	ProfileID uint       `gorm:"not null:unique"`
 	Company   string     `gorm:"size:100"`
 	Title     string     `gorm:"size:100"`
 	StartDate time.Time
@@ -86,8 +86,8 @@ type Company struct {
 
 type Job struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	CompanyID   uint      `gorm:"not null" json:"-"`
-	Company     Company   `gorm:"foreignKey:CompanyID" json:"-"`
+	CompanyID   uint      `gorm:"not null"`
+	Company     Company   `gorm:"foreignKey:CompanyID;references:ID" json:"company"`
 	Title       string    `gorm:"not null" json:"title"`
 	Description string    `gorm:"type:text;not null" json:"description"`
 	Location    string    `gorm:"size:100;not null" json:"location"`
@@ -101,33 +101,31 @@ type Job struct {
 
 type JobResponse struct {
 	ID          uint      `json:"id"`
-	CompanyID   uint      `json:"company_id"`  // Include CompanyID for relationships
+	CompanyID   uint      `json:"company_id"` 
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Location    string    `json:"location"`
 	Type        string    `json:"type"`
 	Skills      Skills    `json:"skills"`
 	Experience  string    `json:"experience"`
-	CompanyName string    `json:"company_name"` // Include the company name
+	CompanyName string    `json:"company_name"` 
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
-
 
 type Application struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	JobID     uint      `gorm:"not null" json:"job_id"`
 	UserID    uint      `gorm:"not null" json:"user_id"`
-	User      User      `gorm:"foreignKey:UserID" json:"user"` 
-	Profile   Profile   `gorm:"foreignKey:UserID;references:UserID" json:"profile"` 
-	Job       Job       `gorm:"foreignKey:JobID" json:"job"` 
 	Status    string    `gorm:"size:20;default:'Pending'" json:"status"`
+	User      User      `gorm:"foreignKey:UserID;references:ID" json:"user"`
+	Profile   Profile   `gorm:"foreignKey:UserID;references:UserID" json:"profile"`
+	Job       Job       `gorm:"foreignKey:JobID;references:ID" json:"job"`  
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 
-// ApplicationResponse defines the structure of the application data sent to the client.
 type ApplicationResponse struct {
 	ID        uint      `json:"id"`
 	Status    string    `json:"status"`
