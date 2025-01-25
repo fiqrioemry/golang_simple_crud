@@ -14,7 +14,7 @@ const (
 	Employer Role = "employer"
 )
 
-// User represents a user in the system (Employer or Job Seeker).
+
 type User struct {
 	ID        uint      `gorm:"primaryKey"`
 	Name      string    `gorm:"size:100;not null"`
@@ -25,32 +25,31 @@ type User struct {
 	UpdatedAt time.Time
 }
 
-// Profile represents a job seeker's profile.
+// for seeker
 type Profile struct {
 	ID        uint      `gorm:"primaryKey"`
 	UserID    uint      `gorm:"not null;unique"`
 	Bio       string    `gorm:"type:text"`
 	Resume    string    `gorm:"type:text"`
-	Skills      Skills    `gorm:"type:json;default:null" json:"skills"`	
+	Skills    Skills    `gorm:"type:json;default:null" json:"skills"`	
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-// Skills represents a JSON array of strings.
+
 type Skills []string
 
-// Value marshals the Skills array into a JSON value.
+
 func (s Skills) Value() (driver.Value, error) {
 	if len(s) == 0 {
-		return nil, nil // Return NULL if skills are empty
+		return nil, nil // Return NULL if skills empty
 	}
 	return json.Marshal(s)
 }
 
-// Scan unmarshals a JSON value into the Skills array.
 func (s *Skills) Scan(value interface{}) error {
 	if value == nil {
-		*s = []string{} // Default to an empty array if NULL
+		*s = []string{} 
 		return nil
 	}
 
@@ -61,7 +60,7 @@ func (s *Skills) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, s)
 }
 
-// Experience represents a job seeker's work experience.
+
 type Experience struct {
 	ID        uint       `gorm:"primaryKey"`
 	ProfileID uint       `gorm:"not null"`
@@ -73,7 +72,7 @@ type Experience struct {
 	UpdatedAt time.Time
 }
 
-// Company represents an employer's company.
+// for company
 type Company struct {
 	ID          uint      `gorm:"primaryKey"`
 	UserID      uint      `gorm:"not null;unique"`
@@ -84,21 +83,38 @@ type Company struct {
 	UpdatedAt   time.Time
 }
 
-// Job represents a job posting.
+
+
 type Job struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	CompanyID   uint      `gorm:"not null" json:"company_id"` // Foreign key to Company
+	CompanyID   uint      `gorm:"not null" json:"-"`
+	Company     Company   `gorm:"foreignKey:CompanyID" json:"-"`
 	Title       string    `gorm:"not null" json:"title"`
 	Description string    `gorm:"type:text;not null" json:"description"`
 	Location    string    `gorm:"size:100;not null" json:"location"`
-	Type        string    `gorm:"size:20;not null" json:"type"`       // Enum: [fulltime, contract, freelance, internship]
-	Skills      Skills    `gorm:"type:json;default:null" json:"skills"` // Array of strings stored as JSON
-	Experience  string    `gorm:"size:20;not null" json:"experience"` // Enum: [fresh graduate, 0-5 tahun, 5-10 tahun]
+	Type        string    `gorm:"size:20;not null" json:"type"`
+	Skills      Skills    `gorm:"type:json;default:null" json:"skills"`
+	Experience  string    `gorm:"size:20;not null" json:"experience"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// Application represents a job application by a job seeker.
+
+type JobResponse struct {
+	ID          uint      `json:"id"`
+	CompanyID   uint      `json:"company_id"`  // Include CompanyID for relationships
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Location    string    `json:"location"`
+	Type        string    `json:"type"`
+	Skills      Skills    `json:"skills"`
+	Experience  string    `json:"experience"`
+	CompanyName string    `json:"company_name"` // Include the company name
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+
 type Application struct {
 	ID        uint      `gorm:"primaryKey"`
 	JobID     uint      `gorm:"not null"`

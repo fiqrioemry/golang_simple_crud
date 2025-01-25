@@ -86,6 +86,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 
 
 // GetAllJobs handles getting all available jobs (public access).
+// GetAllJobs fetches all jobs and includes only the company name.
 func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	var jobs []models.Job
 	if err := database.DB.Preload("Company").Find(&jobs).Error; err != nil {
@@ -93,12 +94,28 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Transform the data to include only the necessary fields
+	var jobResponses []models.JobResponse
+	for _, job := range jobs {
+		jobResponses = append(jobResponses, models.JobResponse{
+			ID:          job.ID,
+			Title:       job.Title,
+			Description: job.Description,
+			Location:    job.Location,
+			Type:        job.Type,
+			Skills:      job.Skills,
+			Experience:  job.Experience,
+			CompanyName: job.Company.Name, // Only include the company name
+			CreatedAt:   job.CreatedAt,
+			UpdatedAt:   job.UpdatedAt,
+		})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jobs)
+	json.NewEncoder(w).Encode(jobResponses)
 }
 
-
-// GetJobByID handles getting a specific job by ID (public access).
+// GetJobByID fetches a specific job and includes only the company name.
 func GetJobByID(w http.ResponseWriter, r *http.Request) {
 	jobID := mux.Vars(r)["id"]
 
@@ -108,9 +125,25 @@ func GetJobByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Transform the data
+	jobResponse := models.JobResponse{
+		ID:          job.ID,
+		Title:       job.Title,
+		Description: job.Description,
+		Location:    job.Location,
+		Type:        job.Type,
+		Skills:      job.Skills,
+		Experience:  job.Experience,
+		CompanyName: job.Company.Name,
+		CreatedAt:   job.CreatedAt,
+		UpdatedAt:   job.UpdatedAt,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(job)
+	json.NewEncoder(w).Encode(jobResponse)
 }
+
+
 
 // UpdateJob handles updating a job posting (employer only).
 func UpdateJob(w http.ResponseWriter, r *http.Request) {
