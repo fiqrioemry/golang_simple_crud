@@ -115,11 +115,44 @@ type JobResponse struct {
 }
 
 
+// Application represents a job application by a job seeker.
 type Application struct {
-	ID        uint      `gorm:"primaryKey"`
-	JobID     uint      `gorm:"not null"`
-	UserID    uint      `gorm:"not null"`
-	Status    string    `gorm:"size:20;default:'Pending'"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	JobID     uint      `gorm:"not null" json:"job_id"`
+	UserID    uint      `gorm:"not null" json:"user_id"`
+	User      User      `gorm:"foreignKey:UserID" json:"user"`         // Include related user data
+	Profile   Profile   `gorm:"foreignKey:UserID;references:UserID" json:"profile"` // Include related profile data
+	Job       Job       `gorm:"foreignKey:JobID" json:"job"`           // Include related job data
+	Status    string    `gorm:"size:20;default:'Pending'" json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+
+
+// ApplicationResponse defines the structure of the application data sent to the client.
+type ApplicationResponse struct {
+	ID        uint   `json:"id"`
+	Status    string `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// User details
+	User struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"user"`
+
+	// Profile details
+	Profile struct {
+		Bio    string   `json:"bio"`
+		Resume string   `json:"resume"`
+		Skills []string `json:"skills"`
+	} `json:"profile"`
+
+	// Company details
+	Company struct {
+		ID   uint   `json:"company_id"`
+		Name string `json:"company_name"`
+	} `json:"company"`
 }
