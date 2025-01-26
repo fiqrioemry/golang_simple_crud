@@ -16,25 +16,55 @@ const (
 
 
 type User struct {
-	ID        uint      `gorm:"primaryKey"`
-	Name      string    `gorm:"size:100;not null"`
-	Email     string    `gorm:"unique;not null"`
-	Password  string    `gorm:"not null"`
-	Role      Role      `gorm:"not null;default:'seeker'"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID       	 uint     	 `gorm:"primaryKey"`
+	Name      	string    	`gorm:"size:100;not null"`
+	Email     	string    	`gorm:"unique;not null"`
+	Password  	string    	`gorm:"not null"`
+	Role      	Role      	`gorm:"not null;default:'seeker'"`
+	Profile	  	Profile		`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Company		Company		`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	CreatedAt 	time.Time
+	UpdatedAt 	time.Time
 }
 
 type Profile struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null:unique"` 
-	Bio       string    `gorm:"type:text"`
-	Resume    string    `gorm:"type:text"`
-	Skills    Skills    `gorm:"type:json;default:null" json:"skills"`
+	ID        	uint      		`gorm:"primaryKey"`
+	UserID    	uint      		`gorm:"not null:unique"` 
+	Bio      	string    		`gorm:"type:text"`
+	Resume    	string    		`gorm:"type:text"`
+	Skills    	Skills    		`gorm:"type:json;default:null" json:"skills"`
+	Experience	[]Experience	`gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	CreatedAt 	time.Time
+	UpdatedAt 	time.Time
+}
+
+type Experience struct {
+	ID        uint       `gorm:"primaryKey"`
+	ProfileID uint       `gorm:"not null:unique"`
+	Company   string     `gorm:"size:100"`
+	Title     string     `gorm:"size:100"`
+	StartDate time.Time
+	EndDate   *time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
+
+// for company
+type Company struct {
+	ID          uint      `gorm:"primaryKey"`
+	UserID      uint      `gorm:"not null;unique"`
+	Name        string    `gorm:"size:100;not null"`
+	Description string    `gorm:"type:text"`
+	Location    string    `gorm:"type:text"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+
+
+
+// * Note : Profile  has many relationship with experience. profile allowed to have many experience
 
 type Skills []string
 
@@ -60,27 +90,6 @@ func (s *Skills) Scan(value interface{}) error {
 }
 
 
-type Experience struct {
-	ID        uint       `gorm:"primaryKey"`
-	ProfileID uint       `gorm:"not null:unique"`
-	Company   string     `gorm:"size:100"`
-	Title     string     `gorm:"size:100"`
-	StartDate time.Time
-	EndDate   *time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-// for company
-type Company struct {
-	ID          uint      `gorm:"primaryKey"`
-	UserID      uint      `gorm:"not null;unique"`
-	Name        string    `gorm:"size:100;not null"`
-	Description string    `gorm:"type:text"`
-	Location    string    `gorm:"type:text"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
 
 
 

@@ -14,19 +14,20 @@ var DB *gorm.DB
 
 func ConnectDatabase() {
 	dsn := os.Getenv("MYSQL_DSN")
+	dialect := mysql.Open(dsn)
 	var err error
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(dialect, &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
 	// Auto-migrate models in the correct order
 	err = DB.AutoMigrate(
-		&models.User{},        // Create users table first
-		&models.Company{},     // Create companies table
-		&models.Job{},         // Create jobs table
-		&models.Profile{},     // Create profiles table after users
-		&models.Application{}, // Create applications table after jobs
+		&models.User{},        
+		&models.Company{},     
+		&models.Job{},      
+		&models.Application{}, 
+		&models.Profile{},  
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
