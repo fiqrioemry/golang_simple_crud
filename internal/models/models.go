@@ -16,20 +16,37 @@ const (
 
 
 type User struct {
-	ID       	 uint     	 `gorm:"primaryKey"`
-	Name      	string    	`gorm:"size:100;not null"`
-	Email     	string    	`gorm:"unique;not null"`
-	Password  	string    	`gorm:"not null"`
-	Role      	Role      	`gorm:"not null;default:'seeker'"`
-	Profile	  	Profile		`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	Company		Company		`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	CreatedAt 	time.Time
-	UpdatedAt 	time.Time
+	ID       		uint     		`gorm:"primaryKey"`
+	Name      		string    		`gorm:"size:100;not null"`
+	Email     		string    		`gorm:"unique;not null"`
+	Password  		string    		`gorm:"not null"`
+	Role      		Role      		`gorm:"not null;default:'seeker'"`
+	Profile	  		Profile			`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Company			Company			`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Applications	[]Application	`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	CreatedAt 		time.Time
+	UpdatedAt 		time.Time
+}
+// * Note : 
+// * - user has one Profile
+// * - user has one company
+// * - user has many Application
+
+// for company
+type Company struct {
+	ID          	uint      		`gorm:"primaryKey"`
+	UserID      	*uint      		`gorm:"unique"`
+	Name        	string    		`gorm:"size:100;not null"`
+	Description 	string    		`gorm:"type:text"`
+	Location    	string    		`gorm:"type:text"`
+	Jobs			[]Job		`gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`	
+	CreatedAt   	time.Time
+	UpdatedAt  		time.Time
 }
 
 type Profile struct {
 	ID        	uint      		`gorm:"primaryKey"`
-	UserID    	uint      		`gorm:"not null:unique"` 
+	UserID    	*uint      		`gorm:"unique"` 
 	Bio      	string    		`gorm:"type:text"`
 	Resume    	string    		`gorm:"type:text"`
 	Skills    	Skills    		`gorm:"type:json;default:null" json:"skills"`
@@ -38,9 +55,14 @@ type Profile struct {
 	UpdatedAt 	time.Time
 }
 
+// * Note : 
+// * - Profile has many Experience
+
+
+
 type Experience struct {
 	ID        uint       `gorm:"primaryKey"`
-	ProfileID uint       `gorm:"not null:unique"`
+	ProfileID *uint      `gorm:"unique"`
 	Company   string     `gorm:"size:100"`
 	Title     string     `gorm:"size:100"`
 	StartDate time.Time
@@ -50,21 +72,43 @@ type Experience struct {
 }
 
 
-// for company
-type Company struct {
-	ID          uint      `gorm:"primaryKey"`
-	UserID      uint      `gorm:"not null;unique"`
-	Name        string    `gorm:"size:100;not null"`
-	Description string    `gorm:"type:text"`
-	Location    string    `gorm:"type:text"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+
+
+// * Note : 
+// * - Company has many Job
+
+
+
+type Job struct {
+	ID          		uint      		`gorm:"primaryKey"`
+	CompanyID   		*uint      		`gorm:"unique"`
+	Title       		string    		`gorm:"not null"`
+	Description 		string    		`gorm:"type:text;not null"`
+	Location    		string    		`gorm:"size:100;not null"`
+	Type        		string    		`gorm:"size:20;not null"`
+	Skills      		Skills    		`gorm:"type:json;not null" json:"skills"`
+	Experience  		string    		`gorm:"size:20;not null"`
+	Applications		[]Application	`gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`	
+	Company				Company	 		`gorm:"foreignKey:CompanyID"` 
+	CreatedAt   		time.Time 		`json:"created_at"`
+	UpdatedAt   		time.Time 		`json:"updated_at"`
 }
 
+// * Note : 
+// * - Job has many application
 
 
+type Application struct {
+	ID        	uint      	`gorm:"primaryKey"`
+	JobID    	*uint      	`gorm:"unique"`           // Foreign key to Job
+	UserID   	*uint      	`gorm:"unique"`           // Foreign key to User
+	User      	User      	`gorm:"foreignKey:UserID"` 
+	Job			Job	 		`gorm:"foreignKey:JobID"` 
+	Status    	string    	`gorm:"size:20;default:'Pending'"`
+	CreatedAt 	time.Time
+	UpdatedAt 	time.Time
+}
 
-// * Note : Profile  has many relationship with experience. profile allowed to have many experience
 
 type Skills []string
 
@@ -91,23 +135,6 @@ func (s *Skills) Scan(value interface{}) error {
 
 
 
-
-
-type Job struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	CompanyID   uint      `gorm:"not null"`
-	Company     Company   `gorm:"foreignKey:CompanyID;references:ID" json:"company"`
-	Title       string    `gorm:"not null" json:"title"`
-	Description string    `gorm:"type:text;not null" json:"description"`
-	Location    string    `gorm:"size:100;not null" json:"location"`
-	Type        string    `gorm:"size:20;not null" json:"type"`
-	Skills      Skills    `gorm:"type:json;default:null" json:"skills"`
-	Experience  string    `gorm:"size:20;not null" json:"experience"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-
 type JobResponse struct {
 	ID          uint      `json:"id"`
 	CompanyID   uint      `json:"company_id"` 
@@ -121,19 +148,6 @@ type JobResponse struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
-
-type Application struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	JobID     uint      `gorm:"not null" json:"job_id"`
-	UserID    uint      `gorm:"not null" json:"user_id"`
-	Status    string    `gorm:"size:20;default:'Pending'" json:"status"`
-	User      User      `gorm:"foreignKey:UserID;references:ID" json:"user"`
-	Profile   Profile   `gorm:"foreignKey:UserID;references:UserID" json:"profile"`
-	Job       Job       `gorm:"foreignKey:JobID;references:ID" json:"job"`  
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 
 type ApplicationResponse struct {
 	ID        uint      `json:"id"`

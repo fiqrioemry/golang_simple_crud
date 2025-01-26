@@ -85,34 +85,52 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// GetAllJobs handles getting all available jobs (public access).
-// GetAllJobs fetches all jobs and includes only the company name.
+// GetAllJobs handles getting all available jobs from company
+// GetAllJobs handles getting all available jobs from companies, including the number of applications for each job.
 func GetAllJobs(w http.ResponseWriter, r *http.Request) {
-	var jobs []models.Job
-	if err := database.DB.Preload("Company").Find(&jobs).Error; err != nil {
-		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
+	var companies []models.Company
+
+	// Preload jobs and applications for each company
+	if err := database.DB.Preload("Jobs.Applications").Find(&companies).Error; err != nil {
+		http.Error(w, "Failed to retrieve jobs from companies", http.StatusInternalServerError)
 		return
 	}
 
-	// Transform the data to include only the necessary fields
-	var jobResponses []models.JobResponse
-	for _, job := range jobs {
-		jobResponses = append(jobResponses, models.JobResponse{
-			ID:          job.ID,
-			Title:       job.Title,
-			Description: job.Description,
-			Location:    job.Location,
-			Type:        job.Type,
-			Skills:      job.Skills,
-			Experience:  job.Experience,
-			CompanyName: job.Company.Name, // Only include the company name
-			CreatedAt:   job.CreatedAt,
-			UpdatedAt:   job.UpdatedAt,
-		})
+	// Transform the response to include the number of applications for each job
+	response := []map[string]interface{}{}
+	for _, company := range companies {
+		companyData := map[string]interface{}{
+			"id":          company.ID,
+			"name":        company.Name,
+			"description": company.Description,
+			"location":    company.Location,
+			"created_at":  company.CreatedAt,
+			"updated_at":  company.UpdatedAt,
+			"jobs":        []map[string]interface{}{},
+		}
+
+		for _, job := range company.Jobs {
+			jobData := map[string]interface{}{
+				"id":           job.ID,
+				"title":        job.Title,
+				"description":  job.Description,
+				"location":     job.Location,
+				"type":         job.Type,
+				"skills":       job.Skills,
+				"experience":   job.Experience,
+				"applications": len(job.Applications), // Count applications
+				"created_at":   job.CreatedAt,
+				"updated_at":   job.UpdatedAt,
+			}
+			companyData["jobs"] = append(companyData["jobs"].([]map[string]interface{}), jobData)
+		}
+
+		response = append(response, companyData)
 	}
 
+	// Respond with the transformed data
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jobResponses)
+	json.NewEncoder(w).Encode(response)
 }
 
 // GetJobByID fetches a specific job and includes only the company name.
