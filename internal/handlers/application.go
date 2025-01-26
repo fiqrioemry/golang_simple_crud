@@ -41,7 +41,8 @@ func ApplyToJob(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
+// mengambil semua data dari application ke job yang diposting oleh employer
+func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
@@ -85,8 +86,8 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// GetApplicationsByUserID 
-func GetApplicationsByUserID(w http.ResponseWriter, r *http.Request) {
+// mengambil semua data dari application ke job yang dimiliki seeker
+func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Job seeker only", http.StatusUnauthorized)

@@ -155,6 +155,39 @@ func GetJobByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func GetAllEmployerPostedJobs(w http.ResponseWriter, r *http.Request) {
+	claims, err := middleware.GetUserFromContext(r)
+	if err != nil || claims["role"] != "employer" {
+		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
+		return
+	}
+
+	var jobs []models.Job
+
+	if err := database.DB.Preload("Applications").Find(&jobs).Error; err != nil {
+		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
+		return
+	}
+
+
+	var response []map[string]interface{}
+	for _, job:= range jobs{
+		applicationData := map[string]interface{}{
+			"id"				: job.ID,
+			"title"				: job.Title,
+			"type"				: job.Type,
+			"Location"			: job.Location,
+			"total_applications": len(job.Applications), 
+			"created_at"		: job.CreatedAt,
+			"updated_at"		: job.UpdatedAt,
+		}
+		response = append(response, applicationData)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 
 
 // UpdateJob

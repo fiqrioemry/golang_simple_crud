@@ -41,7 +41,7 @@ func main(){
 
 	// seeker
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
-	protected.HandleFunc("/api/applications", handlers.GetApplicationsByUserID).Methods("GET") 
+	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplication).Methods("GET") 
 	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET")   // Get profile
 	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT") // Update profile
 	
@@ -51,13 +51,14 @@ func main(){
 	protected.HandleFunc("/api/jobs/{id}", handlers.UpdateJob).Methods("PUT") 
 	protected.HandleFunc("/api/jobs", handlers.CreateJob).Methods("POST")  
 	protected.HandleFunc("/api/jobs/{id}", handlers.DeleteJob).Methods("DELETE") 
-	protected.HandleFunc("/api/applications/job/{id}", handlers.GetApplicationsByJobID).Methods("GET") 
-	protected.HandleFunc("/api/applications/status", handlers.UpdateApplicationStatus).Methods("PUT")
+
+	
+	protected.HandleFunc("/api/employer/jobs", handlers.GetAllEmployerPostedJobs).Methods("GET") 
+	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.GetEmployerJobApplications).Methods("GET") 
+	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.UpdateApplicationStatus).Methods("PUT") 
 
 
-	// protected.HandleFunc("/api/user/employer", handlers.GetUserEmployerProfile).Methods("GET")  
-	// protected.HandleFunc("/api/user/employer", handlers.EditUserEmployerProfile).Methods("PUT")  
-	// router.HandleFunc("/api/jobs/employer", handlers.GetAllEmployerPostedJobs).Methods("GET") 
+
 
 
 
