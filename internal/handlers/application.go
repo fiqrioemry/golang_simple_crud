@@ -42,17 +42,14 @@ func ApplyToJob(w http.ResponseWriter, r *http.Request) {
 
 
 func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
-	// Check if the user is an employer
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
 		return
 	}
 
-	// Extract job ID from the request URL
 	jobID := mux.Vars(r)["id"]
 
-	// Verify the job exists
 	var job models.Job
 	if err := database.DB.First(&job, jobID).Error; err != nil {
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -60,7 +57,7 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var applications []models.Application
-	if err := database.DB.Preload("User.Profile").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
+	if err := database.DB.Preload("User").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
@@ -69,8 +66,22 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var response []map[string]interface{}
+	for _, application := range applications {
+		applicationData := map[string]interface{}{
+			"id"			: application.ID,
+			"user_id"		: application.UserID,
+			"name"			: application.User.Name,
+			"email"			: application.User.Email,
+			"status"		: application.Status,
+			"created_at"	: application.CreatedAt,
+			"updated_at"	: application.UpdatedAt,
+		}
+		response = append(response, applicationData)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(applications)
+	json.NewEncoder(w).Encode(response)
 }
 
 
@@ -115,8 +126,8 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Decode and validate the payload
 	var payload struct {
-		ApplicationIDs []uint `json:"application_ids"` // List of application IDs
-		Status         string `json:"status"`         // Desired status
+		ApplicationIDs []uint `json:"application_ids"` 
+		Status         string `json:"status"`         
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)

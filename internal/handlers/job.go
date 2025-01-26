@@ -12,7 +12,7 @@ import (
 
 // CreateJob handles job creation for employers.
 func CreateJob(w http.ResponseWriter, r *http.Request) {
-	// Define a struct to handle the request payload
+
 	var req struct {
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
@@ -28,27 +28,27 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate required fields
+
 	if req.Title == "" || req.Description == "" || req.Location == "" || req.Type == "" || req.Experience == "" || len(req.Skills) == 0 {
 		http.Error(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
 
-	// Validate `Type` field
+
 	validTypes := map[string]bool{"fulltime": true, "contract": true, "freelance": true, "internship": true}
 	if !validTypes[req.Type] {
 		http.Error(w, "Invalid job type. Must be one of [fulltime, contract, freelance, internship]", http.StatusBadRequest)
 		return
 	}
 
-	// Validate `Experience` field
+
 	validExperience := map[string]bool{"fresh graduate": true, "0-5 tahun": true, "5-10 tahun": true}
 	if !validExperience[req.Experience] {
 		http.Error(w, "Invalid experience level. Must be one of [fresh graduate, 0-5 tahun, 5-10 tahun]", http.StatusBadRequest)
 		return
 	}
 
-	// Get the employer's company ID from the logged-in user
+
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
@@ -64,22 +64,21 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	// Create the Job model
 	job := models.Job{
-		CompanyID:   company.ID,
-		Title:       req.Title,
-		Description: req.Description,
-		Location:    req.Location,
-		Type:        req.Type,
-		Skills:      req.Skills,
-		Experience:  req.Experience,
+		CompanyID	: company.ID,
+		Title		: req.Title,
+		Description	: req.Description,
+		Location	: req.Location,
+		Type		: req.Type,
+		Skills		: req.Skills,
+		Experience	: req.Experience,
 	}
 
-	// Save the job to the database
+
 	if err := database.DB.Create(&job).Error; err != nil {
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with success
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Job created successfully"})
 }
@@ -97,24 +96,22 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	var response []map[string]interface{}
 	for _, job := range jobs {
 		jobData := map[string]interface{}{
-			"id"			: job.ID,
-			"title"			: job.Title,
-			"description"	: job.Description,
-			"location"		: job.Location,
-			"type"			: job.Type,
-			"skills"		: job.Skills,
-			"experience"	: job.Experience,
-			"created_at"	: job.CreatedAt,
-			"updated_at"	: job.UpdatedAt,
-			"company"		: map[string]interface{}{
-				"id"		: job.Company.ID,
-				"name"		: job.Company.Name,
-			},
+			"id"				: job.ID,
+			"title"				: job.Title,
+			"description"		: job.Description,
+			"location"			: job.Location,
+			"type"				: job.Type,
+			"skills"			: job.Skills,
+			"experience"		: job.Experience,
+			"created_at"		: job.CreatedAt,
+			"updated_at"		: job.UpdatedAt,
+			"company_id"		: job.Company.ID,
+			"company_name"		: job.Company.Name,
 			"total_applications": len(job.Applications), 
+			}
+			response = append(response, jobData)
 		}
-		response = append(response, jobData)
-	}
-
+	
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -125,13 +122,37 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 func GetJobByID(w http.ResponseWriter, r *http.Request) {
 	jobID := mux.Vars(r)["id"]
 
-	var job models.Job
-	if err := database.DB.Preload("Company").First(&job, jobID).Error; err != nil {
+	var jobs []models.Job
+	if err := database.DB.Preload("Applications").Preload("Company").First(&jobs, jobID).Error; err != nil {
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
+
+	var response []map[string]interface{}
+	for _, job := range jobs {
+		jobData := map[string]interface{}{
+			"id"			: job.ID,
+			"title"			: job.Title,
+			"description"	: job.Description,
+			"location"		: job.Location,
+			"type"			: job.Type,
+			"skills"		: job.Skills,
+			"experience"	: job.Experience,
+			"created_at"	: job.CreatedAt,
+			"updated_at"	: job.UpdatedAt,
+			"company"		: map[string]interface{}{
+				"id"			: job.Company.ID,
+				"name"			: job.Company.Name,
+				"description"	: job.Company.Description,
+				"Location"		: job.Company.Location,
+		
+			},
+			"total_applications": len(job.Applications), 
+		}
+		response = append(response, jobData)
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(job)
+	json.NewEncoder(w).Encode(response)
 }
 
 
