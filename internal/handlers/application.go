@@ -92,6 +92,7 @@ func GetApplicationsByUserID(w http.ResponseWriter, r *http.Request) {
 	var applications []models.Application
 	if err := database.DB.
 		Preload("Job.Company").
+		Preload("User.Profile").
 		Where("user_id = ?", userID).
 		Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)

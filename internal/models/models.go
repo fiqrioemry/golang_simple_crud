@@ -66,6 +66,8 @@ type Application struct {
 	JobID    	uint      	`gorm:"unique:not null"`        
 	UserID   	uint      	`gorm:"unique;not null"`          
 	Status    	string    	`gorm:"size:20;default:'Pending'"`
+	Job			Job			`gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`
+	User		User		`gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE"`
 	CreatedAt 	time.Time
 	UpdatedAt 	time.Time
 }
