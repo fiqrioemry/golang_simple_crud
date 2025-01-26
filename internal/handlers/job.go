@@ -54,16 +54,10 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := uint(claims["user_id"].(float64))
-	var company models.Company
-	if err := database.DB.Where("user_id = ?", userID).First(&company).Error; err != nil {
-		http.Error(w, "Failed to find employer's company", http.StatusInternalServerError)
-		return
-	}
-
+	companyID := uint(claims["company_id"].(float64))
 	
 	job := models.Job{
-		CompanyID	: company.ID,
+		CompanyID	: companyID,
 		Title		: req.Title,
 		Description	: req.Description,
 		Location	: req.Location,
