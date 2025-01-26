@@ -86,13 +86,14 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// mengambil semua data dari application ke job yang dimiliki seeker
 func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
+
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Job seeker only", http.StatusUnauthorized)
 		return
 	}
+
 
 	userID, ok := claims["user_id"].(float64)
 	if !ok {
@@ -100,14 +101,16 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
 
+	var user models.User
 	if err := database.DB.
-		Preload("Applications").Where("ID = ?", uint(userID)).
-		Find(&user).Error; err != nil {
+		Preload("Applications.Job.Company").
+		Where("id = ?", uint(userID)).
+		First(&user).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
+
 
 	if len(user.Applications) == 0 {
 		http.Error(w, "User has no applications", http.StatusNotFound)
@@ -115,13 +118,24 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response []map[string]interface{}
-	for _, application := range users.Applications{
-
-		}
+	for _, application := range user.Applications {
+		response = append(response, map[string]interface{}{
+			"application_id"	: application.ID,
+			"status"			: application.Status,
+			"company_id"		: application.Job.CompanyID,
+			"company_name"		: application.Job.Company.Name,
+			"job_id"			: application.JobID,
+			"title"				: application.Job.Title,
+			"location"			: application.Job.Location,
+			"total_application"	: len(application.Job.Applications),
+			"created_at"		: application.CreatedAt,
+			"updated_at"		: application.UpdatedAt,
+		})
 	}
 
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(applications)
+	json.NewEncoder(w).Encode(response)
 }
 
 
