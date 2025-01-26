@@ -59,7 +59,6 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch applications for the job and preload related user and profile data
 	var applications []models.Application
 	if err := database.DB.Preload("User.Profile").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
@@ -72,97 +71,45 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform the response to include user and profile details
-	var responses []map[string]interface{}
-	for _, application := range applications {
-		response := map[string]interface{}{
-			"id"			:application.ID,
-			"status"		:application.Status,
-			"created_at"	:application.CreatedAt,
-			"updated_at"	:application.UpdatedAt,
-			"user"			:map[string]interface{}{
-				"id"		:application.UserID,
-				"name"		:application.User.Name, 
-				"email"		:application.User.Email, 
-				"profile"	:map[string]interface{}{
-					"bio"	:application.User.Profile.Bio,    
-					"resume":application.User.Profile.Resume, 
-					"skills":application.User.Profile.Skills, 
-				},
-			},
-		}
-		responses = append(responses, response)
-	}
-
+	
 	// Return the transformed response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(responses)
+	json.NewEncoder(w).Encode(applications)
 }
 
-// GetApplicationsByUserID handles getting all applications for a specific user (job seeker only).
+
+// GetApplicationsByUserID 
 func GetApplicationsByUserID(w http.ResponseWriter, r *http.Request) {
-	// Check if the user is a job seeker
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Job seeker only", http.StatusUnauthorized)
 		return
 	}
 
-	// Extract user ID from JWT claims
 	userID := uint(claims["user_id"].(float64))
 
-	// Fetch applications with related data (Job, Company, User, Profile)
+	
 	var applications []models.Application
 	if err := database.DB.
-		Preload("User.Profile").    // Preload User and their Profile
-		Preload("Job.Company").     // Preload Job and its associated Company
+		Preload("Job.Company").
 		Where("user_id = ?", userID).
 		Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
 
-	// Transform data into the ApplicationResponse format
-	var responses []models.ApplicationResponse
-	for _, app := range applications {
-		// Build the response for each application
-		response := models.ApplicationResponse{
-			ID:        app.ID,
-			Status:    app.Status,
-			CreatedAt: app.CreatedAt,
-			UpdatedAt: app.UpdatedAt,
-		}
-
-		// Populate user details
-		if app.User.ID != 0 {
-			response.User.Name = app.User.Name
-			response.User.Email = app.User.Email
-
-			// Populate profile details
-			response.Profile.Bio = app.User.Profile.Bio
-			response.Profile.Resume = app.User.Profile.Resume
-			response.Profile.Skills = app.User.Profile.Skills
-		}
-
-		// Populate company details
-		if app.Job.ID != 0 && app.Job.Company.ID != 0 {
-			response.Company.ID = app.Job.CompanyID
-			response.Company.Name = app.Job.Company.Name
-		}
-
-		// Add the response to the list
-		responses = append(responses, response)
+	if len(applications) == 0 {
+		http.Error(w, "No applications found for this user", http.StatusNotFound)
+		return
 	}
 
-	// Return the JSON response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(responses)
+	json.NewEncoder(w).Encode(applications)
 }
 
 
 
 func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
-	// Check if the user is an employer
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)

@@ -41,7 +41,7 @@ func main(){
 
 	// seeker
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
-	protected.HandleFunc("/api/applications/user/{id}", handlers.GetApplicationsByUserID).Methods("GET") 
+	protected.HandleFunc("/api/applications", handlers.GetApplicationsByUserID).Methods("GET") 
 	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET")   // Get profile
 	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT") // Update profile
 	

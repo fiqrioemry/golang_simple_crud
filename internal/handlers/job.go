@@ -85,8 +85,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// GetAllJobs handles getting all available jobs from company
-// GetAllJobs handles getting all available jobs from companies, including the number of applications for each job.
+// GetAllJobs 
 func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	var companies []models.Company
 
@@ -96,7 +95,7 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform the response to include the number of applications for each job
+
 	response := []map[string]interface{}{}
 	for _, company := range companies {
 		companyData := map[string]interface{}{
@@ -118,7 +117,7 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 				"type":         job.Type,
 				"skills":       job.Skills,
 				"experience":   job.Experience,
-				"applications": len(job.Applications), // Count applications
+				"applications": len(job.Applications),
 				"created_at":   job.CreatedAt,
 				"updated_at":   job.UpdatedAt,
 			}
@@ -133,7 +132,7 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// GetJobByID fetches a specific job and includes only the company name.
+// GetJobByID
 func GetJobByID(w http.ResponseWriter, r *http.Request) {
 	jobID := mux.Vars(r)["id"]
 
@@ -142,28 +141,13 @@ func GetJobByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
-
-	// Transform the data
-	jobResponse := models.JobResponse{
-		ID:          job.ID,
-		Title:       job.Title,
-		Description: job.Description,
-		Location:    job.Location,
-		Type:        job.Type,
-		Skills:      job.Skills,
-		Experience:  job.Experience,
-		CompanyName: job.Company.Name,
-		CreatedAt:   job.CreatedAt,
-		UpdatedAt:   job.UpdatedAt,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jobResponse)
+	json.NewEncoder(w).Encode(job)
 }
 
 
 
-// UpdateJob handles updating a job posting (employer only).
+// UpdateJob
 func UpdateJob(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is an employer
 	claims, err := middleware.GetUserFromContext(r)
@@ -252,7 +236,7 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 
 
 
-// DeleteJob handles deleting a job posting (employer only).
+// DeleteJob
 func DeleteJob(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is an employer
 	claims, err := middleware.GetUserFromContext(r)
