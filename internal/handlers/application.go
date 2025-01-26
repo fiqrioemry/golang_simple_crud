@@ -94,22 +94,30 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := uint(claims["user_id"].(float64))
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
 
-	
-	var applications []models.Application
+	var user models.User
+
 	if err := database.DB.
-		Preload("Job").
-		Preload("User.Profile").
-		Where("user_id = ?", userID).
-		Find(&applications).Error; err != nil {
+		Preload("Applications").Where("ID = ?", uint(userID)).
+		Find(&user).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
 
-	if len(applications) == 0 {
-		http.Error(w, "No applications found for this user", http.StatusNotFound)
+	if len(user.Applications) == 0 {
+		http.Error(w, "User has no applications", http.StatusNotFound)
 		return
+	}
+
+	var response []map[string]interface{}
+	for _, application := range users.Applications{
+
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -28,34 +28,31 @@ func main(){
 	router.HandleFunc("/api/login", handlers.Login).Methods("POST")
 	router.HandleFunc("/api/jobs", handlers.GetAllJobs).Methods("GET") 
 	router.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")  
-	router.HandleFunc("/refresh", handlers.GetRefreshToken).Methods("POST")
-	// router.HandleFunc("/api/jobs/employer/{id}", handlers.GetAllEmployerJobs).Methods("GET") 
+	router.HandleFunc("/api/refresh", handlers.GetRefreshToken).Methods("POST")
 
 
 	// Protected endpoint with middleware
 	protected := router.PathPrefix("/").Subrouter()
 	protected.Use(middleware.JWTMiddleware)
-	protected.HandleFunc("/me", handlers.AuthMe).Methods("POST")
+	protected.HandleFunc("/api/me", handlers.AuthMe).Methods("POST")
 
 
 
 	// seeker
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST") 
+	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET") 
+	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT")
 	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplication).Methods("GET") 
-	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET")   // Get profile
-	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT") // Update profile
 	
 
 
 	// employer
-	protected.HandleFunc("/api/jobs/{id}", handlers.UpdateJob).Methods("PUT") 
-	protected.HandleFunc("/api/jobs", handlers.CreateJob).Methods("POST")  
-	protected.HandleFunc("/api/jobs/{id}", handlers.DeleteJob).Methods("DELETE") 
-
-	
+	protected.HandleFunc("/api/employer/jobs", handlers.CreateJob).Methods("POST")  
+	protected.HandleFunc("/api/employer/jobs/{id}", handlers.UpdateJob).Methods("PUT") 
+	protected.HandleFunc("/api/employer/jobs/{id}", handlers.DeleteJob).Methods("DELETE") 
 	protected.HandleFunc("/api/employer/jobs", handlers.GetAllEmployerPostedJobs).Methods("GET") 
-	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.GetEmployerJobApplications).Methods("GET") 
 	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.UpdateApplicationStatus).Methods("PUT") 
+	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.GetEmployerJobApplications).Methods("GET") 
 
 
 
