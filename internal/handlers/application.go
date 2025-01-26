@@ -64,15 +64,11 @@ func GetApplicationsByJobID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
-
-	// If no applications are found, return a 404
 	if len(applications) == 0 {
 		http.Error(w, "No applications found for this job", http.StatusNotFound)
 		return
 	}
 
-	
-	// Return the transformed response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(applications)
 }
@@ -91,7 +87,7 @@ func GetApplicationsByUserID(w http.ResponseWriter, r *http.Request) {
 	
 	var applications []models.Application
 	if err := database.DB.
-		Preload("Job.Company").
+		Preload("Job").
 		Preload("User.Profile").
 		Where("user_id = ?", userID).
 		Find(&applications).Error; err != nil {

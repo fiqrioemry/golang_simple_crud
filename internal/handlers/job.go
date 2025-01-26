@@ -87,50 +87,39 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 
 // GetAllJobs 
 func GetAllJobs(w http.ResponseWriter, r *http.Request) {
-	var companies []models.Company
+	var jobs []models.Job
 
-	// Preload jobs and applications for each company
-	if err := database.DB.Preload("Jobs.Applications").Find(&companies).Error; err != nil {
-		http.Error(w, "Failed to retrieve jobs from companies", http.StatusInternalServerError)
+	if err := database.DB.Preload("Applications").Preload("Company").Find(&jobs).Error; err != nil {
+		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
 		return
 	}
 
-
-	response := []map[string]interface{}{}
-	for _, company := range companies {
-		companyData := map[string]interface{}{
-			"id":          company.ID,
-			"name":        company.Name,
-			"description": company.Description,
-			"location":    company.Location,
-			"created_at":  company.CreatedAt,
-			"updated_at":  company.UpdatedAt,
-			"jobs":        []map[string]interface{}{},
+	var response []map[string]interface{}
+	for _, job := range jobs {
+		jobData := map[string]interface{}{
+			"id"			: job.ID,
+			"title"			: job.Title,
+			"description"	: job.Description,
+			"location"		: job.Location,
+			"type"			: job.Type,
+			"skills"		: job.Skills,
+			"experience"	: job.Experience,
+			"created_at"	: job.CreatedAt,
+			"updated_at"	: job.UpdatedAt,
+			"company"		: map[string]interface{}{
+				"id"		: job.Company.ID,
+				"name"		: job.Company.Name,
+			},
+			"total_applications": len(job.Applications), 
 		}
-
-		for _, job := range company.Jobs {
-			jobData := map[string]interface{}{
-				"id":           job.ID,
-				"title":        job.Title,
-				"description":  job.Description,
-				"location":     job.Location,
-				"type":         job.Type,
-				"skills":       job.Skills,
-				"experience":   job.Experience,
-				"applications": len(job.Applications),
-				"created_at":   job.CreatedAt,
-				"updated_at":   job.UpdatedAt,
-			}
-			companyData["jobs"] = append(companyData["jobs"].([]map[string]interface{}), jobData)
-		}
-
-		response = append(response, companyData)
+		response = append(response, jobData)
 	}
 
-	// Respond with the transformed data
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
 
 // GetJobByID
 func GetJobByID(w http.ResponseWriter, r *http.Request) {

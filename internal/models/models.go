@@ -99,7 +99,8 @@ type Job struct {
 	Type        		string    		`gorm:"size:20;not null"`
 	Skills      		Skills    		`gorm:"type:json;not null" json:"skills"`
 	Experience  		string    		`gorm:"size:20;not null"`
-	Applications		[]Application	`gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`	
+	Applications		[]Application	`gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`		
+	Company				Company			`gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE"`
 	CreatedAt   		time.Time 		`json:"created_at"`
 	UpdatedAt   		time.Time 		`json:"updated_at"`
 }
