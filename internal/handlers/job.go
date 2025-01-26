@@ -10,7 +10,113 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// CreateJob handles job creation for employers.
+
+
+
+func GetAllJobs(w http.ResponseWriter, r *http.Request) {
+	var jobs []models.Job
+
+	if err := database.DB.Preload("Applications").Preload("Company").Find(&jobs).Error; err != nil {
+		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
+		return
+	}
+
+	var response []map[string]interface{}
+	for _, job := range jobs {
+		jobData := map[string]interface{}{
+			"id"				: job.ID,
+			"title"				: job.Title,
+			"description"		: job.Description,
+			"location"			: job.Location,
+			"type"				: job.Type,
+			"skills"			: job.Skills,
+			"experience"		: job.Experience,
+			"created_at"		: job.CreatedAt,
+			"updated_at"		: job.UpdatedAt,
+			"company_id"		: job.Company.ID,
+			"company_name"		: job.Company.Name,
+			"total_applications": len(job.Applications), 
+			}
+			response = append(response, jobData)
+		}
+	
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+
+
+func GetJobByID(w http.ResponseWriter, r *http.Request) {
+	jobID := mux.Vars(r)["id"]
+
+	var jobs []models.Job
+	if err := database.DB.Preload("Applications").Preload("Company").First(&jobs, jobID).Error; err != nil {
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	var response []map[string]interface{}
+	for _, job := range jobs {
+		jobData := map[string]interface{}{
+			"id"			: job.ID,
+			"title"			: job.Title,
+			"description"	: job.Description,
+			"location"		: job.Location,
+			"type"			: job.Type,
+			"skills"		: job.Skills,
+			"experience"	: job.Experience,
+			"created_at"	: job.CreatedAt,
+			"updated_at"	: job.UpdatedAt,
+			"company"		: map[string]interface{}{
+				"id"			: job.Company.ID,
+				"name"			: job.Company.Name,
+				"description"	: job.Company.Description,
+				"Location"		: job.Company.Location,
+		
+			},
+			"total_applications": len(job.Applications), 
+		}
+		response = append(response, jobData)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func GetAllEmployerPostedJobs(w http.ResponseWriter, r *http.Request) {
+	claims, err := middleware.GetUserFromContext(r)
+	if err != nil || claims["role"] != "employer" {
+		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
+		return
+	}
+
+	var jobs []models.Job
+
+	companyID := uint(claims["company_id"].(float64))
+	if err := database.DB.Preload("Applications").Where("company_id = ?", companyID).First(&jobs).Error; err != nil {
+		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
+		return
+	}
+
+	var response []map[string]interface{}
+	for _, job:= range jobs{
+		applicationData := map[string]interface{}{
+			"id"				: job.ID,
+			"title"				: job.Title,
+			"type"				: job.Type,
+			"Location"			: job.Location,
+			"total_applications": len(job.Applications), 
+			"created_at"		: job.CreatedAt,
+			"updated_at"		: job.UpdatedAt,
+		}
+		response = append(response, applicationData)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 func CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
@@ -22,7 +128,6 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		Experience  string   `json:"experience"`
 	}
 
-	// Decode the request payload into the struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -62,7 +167,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create the Job model
+	
 	job := models.Job{
 		CompanyID	: company.ID,
 		Title		: req.Title,
@@ -83,114 +188,6 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Job created successfully"})
 }
 
-
-// GetAllJobs 
-func GetAllJobs(w http.ResponseWriter, r *http.Request) {
-	var jobs []models.Job
-
-	if err := database.DB.Preload("Applications").Preload("Company").Find(&jobs).Error; err != nil {
-		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
-		return
-	}
-
-	var response []map[string]interface{}
-	for _, job := range jobs {
-		jobData := map[string]interface{}{
-			"id"				: job.ID,
-			"title"				: job.Title,
-			"description"		: job.Description,
-			"location"			: job.Location,
-			"type"				: job.Type,
-			"skills"			: job.Skills,
-			"experience"		: job.Experience,
-			"created_at"		: job.CreatedAt,
-			"updated_at"		: job.UpdatedAt,
-			"company_id"		: job.Company.ID,
-			"company_name"		: job.Company.Name,
-			"total_applications": len(job.Applications), 
-			}
-			response = append(response, jobData)
-		}
-	
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-
-// GetJobByID
-func GetJobByID(w http.ResponseWriter, r *http.Request) {
-	jobID := mux.Vars(r)["id"]
-
-	var jobs []models.Job
-	if err := database.DB.Preload("Applications").Preload("Company").First(&jobs, jobID).Error; err != nil {
-		http.Error(w, "Job not found", http.StatusNotFound)
-		return
-	}
-
-	var response []map[string]interface{}
-	for _, job := range jobs {
-		jobData := map[string]interface{}{
-			"id"			: job.ID,
-			"title"			: job.Title,
-			"description"	: job.Description,
-			"location"		: job.Location,
-			"type"			: job.Type,
-			"skills"		: job.Skills,
-			"experience"	: job.Experience,
-			"created_at"	: job.CreatedAt,
-			"updated_at"	: job.UpdatedAt,
-			"company"		: map[string]interface{}{
-				"id"			: job.Company.ID,
-				"name"			: job.Company.Name,
-				"description"	: job.Company.Description,
-				"Location"		: job.Company.Location,
-		
-			},
-			"total_applications": len(job.Applications), 
-		}
-		response = append(response, jobData)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-func GetAllEmployerPostedJobs(w http.ResponseWriter, r *http.Request) {
-	claims, err := middleware.GetUserFromContext(r)
-	if err != nil || claims["role"] != "employer" {
-		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
-		return
-	}
-
-	var jobs []models.Job
-
-	if err := database.DB.Preload("Applications").Find(&jobs).Error; err != nil {
-		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
-		return
-	}
-
-
-	var response []map[string]interface{}
-	for _, job:= range jobs{
-		applicationData := map[string]interface{}{
-			"id"				: job.ID,
-			"title"				: job.Title,
-			"type"				: job.Type,
-			"Location"			: job.Location,
-			"total_applications": len(job.Applications), 
-			"created_at"		: job.CreatedAt,
-			"updated_at"		: job.UpdatedAt,
-		}
-		response = append(response, applicationData)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-
-
-// UpdateJob
 func UpdateJob(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is an employer
 	claims, err := middleware.GetUserFromContext(r)
@@ -277,9 +274,6 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Job updated successfully"})
 }
 
-
-
-// DeleteJob
 func DeleteJob(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is an employer
 	claims, err := middleware.GetUserFromContext(r)
