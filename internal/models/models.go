@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Role string
@@ -58,18 +60,16 @@ type Experience struct {
 }
 
 type Application struct {
-	ID        uint   `gorm:"primaryKey"`
-	JobID     uint   `gorm:"not null"`
-	UserID    uint   `gorm:"not null"`
-	Status    string `gorm:"size:20;default:'Pending'"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Job       Job  `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`
-	User      User `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE"`
+	gorm.Model
+	JobID  uint   `gorm:"not null"`
+	UserID uint   `gorm:"not null"`
+	Status string `gorm:"size:20;default:'Pending'"`
+	Job    Job    `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`
+	User   User   `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE"`
 }
 
 type Job struct {
-	ID           uint          `gorm:"primaryKey"`
+	gorm.Model
 	CompanyID    uint          `gorm:"not null"`
 	Title        string        `gorm:"not null"`
 	Description  string        `gorm:"type:text;not null"`
@@ -79,6 +79,4 @@ type Job struct {
 	Skills       []string      `gorm:"type:json;serializer:json"`
 	Company      Company       `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE"`
 	Applications []Application `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
 }

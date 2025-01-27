@@ -27,6 +27,7 @@ func ConnectDatabase() {
 		&models.Job{},
 		&models.Application{},
 		&models.Profile{},
+		&models.Experience{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

@@ -22,13 +22,35 @@ func GetUserSeekerProfile(w http.ResponseWriter, r *http.Request) {
 	userID := uint(claims["user_id"].(float64))
 
 	var user models.User
-	if err := database.DB.Preload("Profile").First(&user, userID).Error; err != nil {
+	if err := database.DB.Preload("Profile.Experience").Preload("Applications").First(&user, userID).Error; err != nil {
 		http.Error(w, "Profile not found", http.StatusNotFound)
 		return
 	}
 
+	var experienceData []map[string]interface{}
+	for _, experience := range user.Profile.Experience {
+		experienceData = append(experienceData, map[string]interface{}{
+			"id":         experience.ID,
+			"company":    experience.Company,
+			"title":      experience.Title,
+			"start_date": experience.StartDate,
+			"end_date":   experience.EndDate,
+		})
+	}
+
+	response := map[string]interface{}{
+		"user_id":      user.ID,
+		"name":         user.Name,
+		"email":        user.Email,
+		"bio":          user.Profile.Bio,
+		"resume":       user.Profile.Resume,
+		"skills":       user.Profile.Skills,
+		"experience":   experienceData,
+		"applications": len(user.Applications),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(response)
 }
 
 func UpdateUserSeekerProfile(w http.ResponseWriter, r *http.Request) {
@@ -101,11 +123,12 @@ func AddUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Company   string `gorm:"size:100"`
-		Title     string `gorm:"size:100"`
-		StartDate time.Time
-		EndDate   *time.Time
+		Company   string     `json:"company" gorm:"size:100"`
+		Title     string     `json:"title" gorm:"size:100"`
+		StartDate time.Time  `json:"start_date"`
+		EndDate   *time.Time `json:"end_date"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -148,17 +171,13 @@ func AddUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var experience models.Experience
-
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message":    "Experience added successfully",
-		"experience": experience,
+		"message": "Experience added successfully",
 	})
 }
 
 func UpdateUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
-	// Ambil klaim user dari context untuk memverifikasi role dan user_id
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Seeker only", http.StatusUnauthorized)
@@ -176,7 +195,6 @@ func UpdateUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validasi input
 	if req.Company == "" || req.Title == "" || req.StartDate.IsZero() {
 		http.Error(w, "Company, Title, and Start Date are required fields", http.StatusBadRequest)
 		return
