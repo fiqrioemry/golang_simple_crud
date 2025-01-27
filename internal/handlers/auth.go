@@ -69,13 +69,12 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("check user ID :",user.ID)
+	log.Println("check user ID :", user.ID)
 
 	profile := models.Profile{
 		UserID: user.ID,
 	}
-	
-	
+
 	if err := tx.Create(&profile).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, "Failed to create profile", http.StatusInternalServerError)
@@ -92,8 +91,6 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
 }
-
-
 
 // Register : Employer
 func EmployerRegister(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +165,6 @@ func EmployerRegister(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Employer registered successfully"})
 }
 
-
 // Login handles user login and JWT generation.
 func Login(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
@@ -195,14 +191,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate Access Token (valid for 1 day)
-	accessToken, err := auth.GenerateToken(user.ID, string(user.Role), 24*time.Hour)
+	accessToken, err := auth.GenerateToken(user.ID, user.Company.ID, string(user.Role), 24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate Refresh Token (valid for 7 days)
-	refreshToken, err := auth.GenerateToken(user.ID, string(user.Role), 7*24*time.Hour)
+	refreshToken, err := auth.GenerateToken(user.ID, user.Company.ID, string(user.Role), 7*24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
 		return
@@ -219,9 +215,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with the access token
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message" : "Login is successfully", "access_token": accessToken})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login is successfully", "access_token": accessToken})
 }
-
 
 // AuthMe handles the authenticated user info retrieval.
 func AuthMe(w http.ResponseWriter, r *http.Request) {
@@ -265,7 +260,6 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-
 // GetRefreshToken handles refreshing the access token using the refresh token.
 func GetRefreshToken(w http.ResponseWriter, r *http.Request) {
 	// Retrieve the refresh token from the cookies
@@ -283,7 +277,7 @@ func GetRefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate a new Access Token
-	accessToken, err := auth.GenerateToken(uint(claims["user_id"].(float64)), claims["role"].(string), 24*time.Hour)
+	accessToken, err := auth.GenerateToken(uint(claims["user_id"].(float64)), uint(claims["company_id"].(float64)), claims["role"].(string), 24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return

@@ -28,13 +28,13 @@ func init() {
 	JWTSecret = []byte(secret)
 }
 
-
 // GenerateToken generates a new JWT for a given user ID and role with a specified expiration duration.
-func GenerateToken(userID uint, role string, expiration time.Duration) (string, error) {
+func GenerateToken(userID uint, companyID uint, role string, expiration time.Duration) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"role":    role,
-		"exp":     time.Now().Add(expiration).Unix(), // Configurable expiration
+		"user_id":    userID,
+		"company_id": companyID,
+		"role":       role,
+		"exp":        time.Now().Add(expiration).Unix(), // Configurable expiration
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
