@@ -11,7 +11,7 @@ import (
 )
 
 func CreateJob(w http.ResponseWriter, r *http.Request) {
-
+	// Deklarasi struct untuk request payload
 	var req struct {
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
@@ -21,36 +21,48 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		Experience  string   `json:"experience"`
 	}
 
+	// Decode JSON dari request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
+	// Validasi field kosong
 	if req.Title == "" || req.Description == "" || req.Location == "" || req.Type == "" || req.Experience == "" || len(req.Skills) == 0 {
 		http.Error(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
 
+	// Validasi job type
 	validTypes := map[string]bool{"fulltime": true, "contract": true, "freelance": true, "internship": true}
 	if !validTypes[req.Type] {
 		http.Error(w, "Invalid job type. Must be one of [fulltime, contract, freelance, internship]", http.StatusBadRequest)
 		return
 	}
 
+	// Validasi experience level
 	validExperience := map[string]bool{"fresh graduate": true, "0-5 tahun": true, "5-10 tahun": true}
 	if !validExperience[req.Experience] {
 		http.Error(w, "Invalid experience level. Must be one of [fresh graduate, 0-5 tahun, 5-10 tahun]", http.StatusBadRequest)
 		return
 	}
 
+	// Ambil klaim dari middleware JWT
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
 		return
 	}
 
-	companyID := uint(claims["company_id"].(float64))
+	// Validasi dan konversi company_id dari claims
+	companyIDFloat, ok := claims["company_id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims: missing company_id", http.StatusUnauthorized)
+		return
+	}
+	companyID := uint(companyIDFloat)
 
+	// Buat job baru
 	job := models.Job{
 		CompanyID:   companyID,
 		Title:       req.Title,
@@ -61,13 +73,18 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		Experience:  req.Experience,
 	}
 
+	// Simpan job ke database
 	if err := database.DB.Create(&job).Error; err != nil {
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
 		return
 	}
 
+	// Kirimkan respons sukses
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Job created successfully"})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Job created successfully",
+		"job_id":  job.ID,
+	})
 }
 
 func UpdateJob(w http.ResponseWriter, r *http.Request) {
