@@ -115,37 +115,31 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var applications []models.Application
-	if err := database.DB.
-		Preload("Job.Company").
-		Where("user_id = ?", uint(userID)).
-		Find(&applications).Error; err != nil {
+	if err := database.DB.Preload("Job.Applications").Preload("Job.Company").Where("user_id = ?", uint(userID)).First(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
-		return
 	}
-
 	if len(applications) == 0 {
 		http.Error(w, "User has no applications", http.StatusNotFound)
 		return
 	}
 
 	var response []map[string]interface{}
-	for _, application := range applications {
-		response = append(response, map[string]interface{}{
-			"application_id":    application.ID,
-			"status":            application.Status,
-			"company_id":        application.Job.CompanyID,
-			"company_name":      application.Job.Company.Name,
-			"job_id":            application.JobID,
-			"title":             application.Job.Title,
-			"location":          application.Job.Location,
-			"total_application": len(application.Job.Applications),
-			"created_at":        application.CreatedAt,
-			"updated_at":        application.UpdatedAt,
-		})
+	for _, applications := range applications {
+		applicationData := map[string]interface{}{
+			"application_id":     applications.ID,
+			"job_id":             applications.JobID,
+			"company_name":       applications.Job.Company.Name,
+			"job_title":          applications.Job.Title,
+			"job_location":       applications.Job.Location,
+			"total_applications": len(applications.Job.Applications),
+			"status":             applications.Status,
+			"created_at":         applications.CreatedAt,
+		}
+		response = append(response, applicationData)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(applications)
+	json.NewEncoder(w).Encode(response)
 }
 
 func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
