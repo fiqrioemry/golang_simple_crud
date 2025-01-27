@@ -23,11 +23,11 @@ func ConnectDatabase() {
 
 	// Auto-migrate models in the correct order
 	err = DB.AutoMigrate(
-		&models.User{},        
-		&models.Company{},     
-		&models.Job{},      
-		&models.Application{}, 
-		&models.Profile{},  
+		&models.User{},
+		&models.Company{},
+		&models.Job{},
+		&models.Application{},
+		&models.Profile{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

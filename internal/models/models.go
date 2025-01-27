@@ -40,7 +40,7 @@ type Profile struct {
 	UserID     uint         `gorm:"unique; not null"`
 	Bio        string       `gorm:"type:text"`
 	Resume     string       `gorm:"type:text"`
-	Skills     []string     `gorm:"type:json;not null"`
+	Skills     []string     `gorm:"type:json;"`
 	Experience []Experience `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time

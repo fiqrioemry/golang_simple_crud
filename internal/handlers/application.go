@@ -97,22 +97,22 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
+	var applications []models.Application
 	if err := database.DB.
-		Preload("Applications.Job.Company").
-		Where("id = ?", uint(userID)).
-		First(&user).Error; err != nil {
+		Preload("Job.Company").
+		Where("user_id = ?", uint(userID)).
+		Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
 
-	if len(user.Applications) == 0 {
+	if len(applications) == 0 {
 		http.Error(w, "User has no applications", http.StatusNotFound)
 		return
 	}
 
 	var response []map[string]interface{}
-	for _, application := range user.Applications {
+	for _, application := range applications {
 		response = append(response, map[string]interface{}{
 			"application_id":    application.ID,
 			"status":            application.Status,
