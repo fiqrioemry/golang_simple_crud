@@ -179,7 +179,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// Find user by email
 	var user models.User
-	if err := database.DB.Where("email = ?", credentials.Email).First(&user).Error; err != nil {
+	if err := database.DB.Preload("Company").Where("email = ?", credentials.Email).First(&user).Error; err != nil {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}

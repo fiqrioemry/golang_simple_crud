@@ -40,7 +40,7 @@ type Profile struct {
 	UserID     uint         `gorm:"unique; not null"`
 	Bio        string       `gorm:"type:text"`
 	Resume     string       `gorm:"type:text"`
-	Skills     []string     `gorm:"type:json;"`
+	Skills     []string     `gorm:"type:json;serializer:json"`
 	Experience []Experience `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -76,7 +76,7 @@ type Job struct {
 	Location     string        `gorm:"size:100;not null"`
 	Type         string        `gorm:"size:20;not null"`
 	Experience   string        `gorm:"size:20;not null"`
-	Skills       []string      `gorm:"type:json;not null"`
+	Skills       []string      `gorm:"type:json;serializer:json"`
 	Company      Company       `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE"`
 	Applications []Application `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE"`
 	CreatedAt    time.Time
