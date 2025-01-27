@@ -165,24 +165,23 @@ func UpdateUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode request payload
-	var payload struct {
+	var req struct {
 		Company   string     `json:"company"`
 		Title     string     `json:"title"`
 		StartDate time.Time  `json:"start_date"`
 		EndDate   *time.Time `json:"end_date"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	// Validasi input
-	if payload.Company == "" || payload.Title == "" || payload.StartDate.IsZero() {
+	if req.Company == "" || req.Title == "" || req.StartDate.IsZero() {
 		http.Error(w, "Company, Title, and Start Date are required fields", http.StatusBadRequest)
 		return
 	}
-	if payload.EndDate != nil && payload.EndDate.Before(payload.StartDate) {
+	if req.EndDate != nil && req.EndDate.Before(req.StartDate) {
 		http.Error(w, "End date cannot be before start date", http.StatusBadRequest)
 		return
 	}
@@ -202,10 +201,10 @@ func UpdateUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	experience.Company = payload.Company
-	experience.Title = payload.Title
-	experience.StartDate = payload.StartDate
-	experience.EndDate = payload.EndDate
+	experience.Company = req.Company
+	experience.Title = req.Title
+	experience.StartDate = req.StartDate
+	experience.EndDate = req.EndDate
 
 	if err := database.DB.Save(&experience).Error; err != nil {
 		http.Error(w, "Failed to update experience", http.StatusInternalServerError)

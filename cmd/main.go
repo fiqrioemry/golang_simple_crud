@@ -13,21 +13,27 @@ import (
 )
 
 func main() {
+	// load env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Warning : .env file not found %v", err)
 	}
 
+	// initiate database
 	database.ConnectDatabase()
 
+	// create route api
 	router := mux.NewRouter()
 
+	// authentication
+	router.HandleFunc("/api/login", handlers.Login).Methods("POST")
+	router.HandleFunc("/api/refresh", handlers.GetRefreshToken).Methods("POST")
 	router.HandleFunc("/api/register/seeker", handlers.SeekerRegister).Methods("POST")
 	router.HandleFunc("/api/register/employer", handlers.EmployerRegister).Methods("POST")
-	router.HandleFunc("/api/login", handlers.Login).Methods("POST")
+
+	// public access
 	router.HandleFunc("/api/jobs", handlers.GetAllJobs).Methods("GET")
 	router.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")
-	router.HandleFunc("/api/refresh", handlers.GetRefreshToken).Methods("POST")
 
 	// Protected endpoint with middleware
 	protected := router.PathPrefix("/").Subrouter()
@@ -38,10 +44,12 @@ func main() {
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST")
 	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET")
 	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT")
+	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplication).Methods("GET")
 	protected.HandleFunc("/api/seeker/profile/experience", handlers.AddUserSeekerExperience).Methods("POST")
 	protected.HandleFunc("/api/seeker/profile/experience/{id}", handlers.UpdateUserSeekerExperience).Methods("PUT")
-	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplication).Methods("GET")
-	protected.HandleFunc("/api/seeker/applications", handlers.CancelSeekerJobApplication).Methods("DELETE")
+
+	// next feature
+	// protected.HandleFunc("/api/seeker/applications/{id}", handlers.CancelSeekerJobApplication).Methods("DELETE")
 
 	// employer
 	protected.HandleFunc("/api/employer/jobs", handlers.CreateJob).Methods("POST")
