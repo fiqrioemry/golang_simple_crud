@@ -40,8 +40,6 @@ func ApplyToJob(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Application submitted successfully"})
 }
 
-
-// mengambil semua data dari application ke job yang diposting oleh employer
 func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
@@ -70,13 +68,13 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	var response []map[string]interface{}
 	for _, application := range applications {
 		applicationData := map[string]interface{}{
-			"id"			: application.ID,
-			"user_id"		: application.UserID,
-			"name"			: application.User.Name,
-			"email"			: application.User.Email,
-			"status"		: application.Status,
-			"created_at"	: application.CreatedAt,
-			"updated_at"	: application.UpdatedAt,
+			"id":         application.ID,
+			"user_id":    application.UserID,
+			"name":       application.User.Name,
+			"email":      application.User.Email,
+			"status":     application.Status,
+			"created_at": application.CreatedAt,
+			"updated_at": application.UpdatedAt,
 		}
 		response = append(response, applicationData)
 	}
@@ -84,7 +82,6 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
-
 
 func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 
@@ -94,13 +91,11 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	userID, ok := claims["user_id"].(float64)
 	if !ok {
 		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 		return
 	}
-
 
 	var user models.User
 	if err := database.DB.
@@ -111,7 +106,6 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	if len(user.Applications) == 0 {
 		http.Error(w, "User has no applications", http.StatusNotFound)
 		return
@@ -120,25 +114,22 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 	var response []map[string]interface{}
 	for _, application := range user.Applications {
 		response = append(response, map[string]interface{}{
-			"application_id"	: application.ID,
-			"status"			: application.Status,
-			"company_id"		: application.Job.CompanyID,
-			"company_name"		: application.Job.Company.Name,
-			"job_id"			: application.JobID,
-			"title"				: application.Job.Title,
-			"location"			: application.Job.Location,
-			"total_application"	: len(application.Job.Applications),
-			"created_at"		: application.CreatedAt,
-			"updated_at"		: application.UpdatedAt,
+			"application_id":    application.ID,
+			"status":            application.Status,
+			"company_id":        application.Job.CompanyID,
+			"company_name":      application.Job.Company.Name,
+			"job_id":            application.JobID,
+			"title":             application.Job.Title,
+			"location":          application.Job.Location,
+			"total_application": len(application.Job.Applications),
+			"created_at":        application.CreatedAt,
+			"updated_at":        application.UpdatedAt,
 		})
 	}
-
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
-
-
 
 func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 	claims, err := middleware.GetUserFromContext(r)
@@ -149,8 +140,8 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Decode and validate the payload
 	var payload struct {
-		ApplicationIDs []uint `json:"application_ids"` 
-		Status         string `json:"status"`         
+		ApplicationIDs []uint `json:"application_ids"`
+		Status         string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -207,9 +198,8 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 	// Respond with success
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message"			: "Application statuses updated successfully",
-		"updated_status"	: payload.Status,
-		"application_ids"	: payload.ApplicationIDs,
+		"message":         "Application statuses updated successfully",
+		"updated_status":  payload.Status,
+		"application_ids": payload.ApplicationIDs,
 	})
 }
-
