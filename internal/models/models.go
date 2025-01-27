@@ -24,17 +24,6 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
-type Company struct {
-	ID          uint   `gorm:"primaryKey"`
-	UserID      uint   `gorm:"unique; not null"`
-	Name        string `gorm:"size:100;not null"`
-	Description string `gorm:"type:text"`
-	Location    string `gorm:"type:text"`
-	Jobs        []Job  `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
 type Profile struct {
 	ID         uint         `gorm:"primaryKey"`
 	UserID     uint         `gorm:"unique; not null"`
@@ -44,6 +33,17 @@ type Profile struct {
 	Experience []Experience `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+type Company struct {
+	ID          uint   `gorm:"primaryKey"`
+	UserID      uint   `gorm:"unique; not null"`
+	Name        string `gorm:"size:100;not null"`
+	Description string `gorm:"type:text"`
+	Location    string `gorm:"type:text"`
+	Jobs        []Job  `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type Experience struct {

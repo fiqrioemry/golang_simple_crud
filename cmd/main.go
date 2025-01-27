@@ -38,7 +38,10 @@ func main() {
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST")
 	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET")
 	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT")
+	protected.HandleFunc("/api/seeker/profile/experience", handlers.AddUserSeekerExperience).Methods("POST")
+	protected.HandleFunc("/api/seeker/profile/experience/{id}", handlers.UpdateUserSeekerExperience).Methods("PUT")
 	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplication).Methods("GET")
+	protected.HandleFunc("/api/seeker/applications", handlers.CancelSeekerJobApplication).Methods("DELETE")
 
 	// employer
 	protected.HandleFunc("/api/employer/jobs", handlers.CreateJob).Methods("POST")

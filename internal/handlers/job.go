@@ -157,7 +157,7 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 
 	var job models.Job
 	if err := database.DB.First(&job, jobID).Error; err != nil {
-		http.Error(w, "Job not found", http.StatusNotFound)
+		http.Error(w, "Job not found or no longer exist", http.StatusNotFound)
 		return
 	}
 

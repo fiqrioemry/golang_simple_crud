@@ -115,7 +115,7 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var applications []models.Application
-	if err := database.DB.Preload("Job.Applications").Preload("Job.Company").Where("user_id = ?", uint(userID)).First(&applications).Error; err != nil {
+	if err := database.DB.Preload("Job.Applications").Preload("Job.Company").Where("user_id = ?", uint(userID)).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 	}
 	if len(applications) == 0 {
@@ -143,13 +143,7 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
-	claims, err := middleware.GetUserFromContext(r)
-	if err != nil || claims["role"] != "employer" {
-		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
-		return
-	}
-
-	// Decode and validate the payload
+	// validasi input
 	var payload struct {
 		ApplicationIDs []uint `json:"application_ids"`
 		Status         string `json:"status"`
@@ -164,7 +158,6 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the status value
 	allowedStatuses := map[string]bool{
 		"Pending":  true,
 		"Accepted": true,
@@ -175,30 +168,29 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the employer's company
-	userID := uint(claims["user_id"].(float64))
-	var company models.Company
-	if err := database.DB.Where("user_id = ?", userID).First(&company).Error; err != nil {
-		http.Error(w, "Failed to find employer's company", http.StatusInternalServerError)
+	// cek otorisasi
+	claims, err := middleware.GetUserFromContext(r)
+	if err != nil || claims["role"] != "employer" {
+		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
 		return
 	}
 
-	// Fetch the applications to ensure they belong to the employer's jobs
-	var applications []models.Application
-	if err := database.DB.Joins("JOIN jobs ON applications.job_id = jobs.id").
-		Where("applications.id IN ? AND jobs.company_id = ?", payload.ApplicationIDs, company.ID).
-		Find(&applications).Error; err != nil {
-		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
+	jobID := mux.Vars(r)["id"]
+
+	var job models.Job
+	if err := database.DB.First(&job, jobID).Error; err != nil {
+		http.Error(w, "Job not found or no longer exist", http.StatusNotFound)
 		return
 	}
 
-	// Check if all applications were found
-	if len(applications) != len(payload.ApplicationIDs) {
-		http.Error(w, "Some applications do not belong to your jobs or do not exist", http.StatusForbidden)
+	companyID := uint(claims["company_id"].(float64))
+
+	if job.CompanyID != companyID {
+		http.Error(w, "Unauthorized: Cannot update job of another employer", http.StatusForbidden)
 		return
 	}
 
-	// Update the status of the applications in batch
+	// update status dari applicant
 	if err := database.DB.Model(&models.Application{}).
 		Where("id IN ?", payload.ApplicationIDs).
 		Update("status", payload.Status).Error; err != nil {
@@ -206,11 +198,9 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with success
+	// send response
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message":         "Application statuses updated successfully",
-		"updated_status":  payload.Status,
-		"application_ids": payload.ApplicationIDs,
+		"message": "Application statuses updated successfully",
 	})
 }

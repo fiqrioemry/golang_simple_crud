@@ -6,12 +6,80 @@ import (
 	"golang_project/internal/database"
 	"golang_project/internal/middleware"
 	"golang_project/internal/models"
-	"log"
 	"net/http"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// func SeekerRegister(w http.ResponseWriter, r *http.Request) {
+// 	// Define a struct to handle the request body
+// 	var req struct {
+// 		Name     string `json:"name"`
+// 		Email    string `json:"email"`
+// 		Password string `json:"password"`
+// 	}
+
+// 	// Decode the request body into the struct
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	// Validate required fields
+// 	if req.Name == "" || req.Email == "" || req.Password == "" {
+// 		http.Error(w, "All fields are required", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	// Check if the email is already registered
+// 	var existingUser models.User
+// 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+// 		http.Error(w, "Email is already registered", http.StatusConflict)
+// 		return
+// 	}
+
+// 	// Hash the password
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Use a database transaction with automatic handling
+// 	if err := database.DB.Transaction(func(tx *gorm.DB) error {
+// 		// Create the user model
+// 		user := models.User{
+// 			Name:     req.Name,
+// 			Email:    req.Email,
+// 			Password: string(hashedPassword),
+// 			Role:     "seeker", // Explicitly set the role
+// 		}
+
+// 		if err := tx.Create(&user).Error; err != nil {
+// 			return err // Automatically triggers rollback
+// 		}
+
+// 		// Create the profile associated with the user
+// 		profile := models.Profile{
+// 			UserID: user.ID,
+// 		}
+
+// 		if err := tx.Create(&profile).Error; err != nil {
+// 			return err // Automatically triggers rollback
+// 		}
+
+// 		// If everything succeeds, transaction will be committed
+// 		return nil
+// 	}); err != nil {
+// 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Respond with success
+// 	w.WriteHeader(http.StatusCreated)
+// 	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
+// }
 
 // Register : Seeker
 func SeekerRegister(w http.ResponseWriter, r *http.Request) {
@@ -68,8 +136,6 @@ func SeekerRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
-
-	log.Println("check user ID :", user.ID)
 
 	profile := models.Profile{
 		UserID: user.ID,
