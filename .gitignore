@@ -1,1 +1,39 @@
-env
+# Binaries & executables
+*.exe
+*.out
+*.app
+*.dll
+*.dylib
+*.so
+
+# Golang build artifacts
+/bin/
+/obj/
+/dist/
+/tmp/
+
+# Go modules
+/go/
+/vendor/
+/pkg/
+/Gopkg.lock
+go.sum
+
+# Test & Coverage
+*.test
+*.prof
+*.cover
+cover.out
+
+# Logs & debugging
+*.log
+debug/
+trace.out
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+*.sublim

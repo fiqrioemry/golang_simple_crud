@@ -263,23 +263,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate Refresh Token (valid for 7 days)
 	refreshToken, err := auth.GenerateToken(user.ID, user.Company.ID, string(user.Role), 7*24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
 		return
 	}
 
-	// Set Refresh Token in an HTTP-only cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		HttpOnly: true,
+		Secure:   true,
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 		Path:     "/",
 	})
 
-	// Respond with the access token
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Login is successfully", "access_token": accessToken})
 }
@@ -326,23 +324,19 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// GetRefreshToken handles refreshing the access token using the refresh token.
 func GetRefreshToken(w http.ResponseWriter, r *http.Request) {
-	// Retrieve the refresh token from the cookies
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		http.Error(w, "Refresh token not found", http.StatusUnauthorized)
 		return
 	}
 
-	// Validate the refresh token
 	claims, err := auth.ValidateToken(cookie.Value)
 	if err != nil {
 		http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
 		return
 	}
 
-	// Generate a new Access Token
 	accessToken, err := auth.GenerateToken(uint(claims["user_id"].(float64)), uint(claims["company_id"].(float64)), claims["role"].(string), 24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
