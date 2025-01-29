@@ -297,7 +297,7 @@ func GetAllEmployerPostedJobs(w http.ResponseWriter, r *http.Request) {
 	userID := uint(claims["user_id"].(float64))
 
 	var employer models.Employer
-	if err := database.DB.Where("user_id = ?", userID).First(&employer).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userID).Find(&employer).Error; err != nil {
 		http.Error(w, "Employer profile not found", http.StatusNotFound)
 		return
 	}

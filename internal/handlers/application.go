@@ -112,8 +112,15 @@ func GetSeekerJobApplications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var seeker models.Seeker
+
+	if err := database.DB.Where("user_id = ?", uint(userID)).First(&seeker).Error; err != nil {
+		http.Error(w, "Seeker Profile not found", http.StatusNotFound)
+		return
+	}
+
 	var applications []models.Application
-	if err := database.DB.Preload("Job.Applications").Preload("Job.Employer").Where("user_id = ?", uint(userID)).Find(&applications).Error; err != nil {
+	if err := database.DB.Preload("Job.Applications").Preload("Job.Employer").Where("seeker_id = ?", seeker.ID).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 	}
 	if len(applications) == 0 {
@@ -166,6 +173,17 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var applications []models.Application
+	if err := database.DB.Where("id IN ?", payload.ApplicationIDs).Find(&applications).Error; err != nil {
+		http.Error(w, "Failed to find applications", http.StatusInternalServerError)
+		return
+	}
+
+	if len(applications) != len(payload.ApplicationIDs) {
+		http.Error(w, "One or more application IDs are invalid", http.StatusBadRequest)
+		return
+	}
+
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
@@ -175,13 +193,13 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 	jobID := mux.Vars(r)["id"]
 
 	var job models.Job
+
 	if err := database.DB.First(&job, jobID).Error; err != nil {
-		http.Error(w, "Job not found or no longer exist", http.StatusNotFound)
+		http.Error(w, "Job not found or no longer exists", http.StatusNotFound)
 		return
 	}
 
 	userID := uint(claims["user_id"].(float64))
-
 	var employer models.Employer
 	if err := database.DB.Where("user_id = ?", userID).First(&employer).Error; err != nil {
 		http.Error(w, "Employer Profile not found", http.StatusInternalServerError)
