@@ -226,7 +226,6 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
 		return
 	}
-
 	var response []map[string]interface{}
 	for _, job := range jobs {
 		jobData := map[string]interface{}{
@@ -236,6 +235,7 @@ func GetAllJobs(w http.ResponseWriter, r *http.Request) {
 			"location":           job.Location,
 			"type":               job.Type,
 			"skills":             job.Skills,
+			"isActive":           job.IsActive,
 			"experience":         job.Experience,
 			"created_at":         job.CreatedAt,
 			"updated_at":         job.UpdatedAt,
@@ -294,10 +294,16 @@ func GetAllEmployerPostedJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var jobs []models.Job
+	userID := uint(claims["user_id"].(float64))
 
-	employerID := uint(claims["employer_id"].(float64))
-	if err := database.DB.Preload("Applications").Preload("Employer").Where("employer_id = ?", employerID).First(&jobs).Error; err != nil {
+	var employer models.Employer
+	if err := database.DB.Where("user_id = ?", userID).First(&employer).Error; err != nil {
+		http.Error(w, "Employer profile not found", http.StatusNotFound)
+		return
+	}
+
+	var jobs []models.Job
+	if err := database.DB.Preload("Applications").Preload("Employer").Where("employer_id = ?", employer.ID).First(&jobs).Error; err != nil {
 		http.Error(w, "Failed to retrieve jobs", http.StatusInternalServerError)
 		return
 	}

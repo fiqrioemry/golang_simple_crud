@@ -27,7 +27,7 @@ func main() {
 	router := mux.NewRouter()
 
 	// Middleware API Key
-	router.Use(middleware.APIKeyMiddleware)
+	// router.Use(middleware.APIKeyMiddleware)
 
 	// Authentication Routes
 	router.HandleFunc("/api/login", handlers.Login).Methods("POST")
