@@ -7,162 +7,146 @@ import (
 	"golang_project/internal/middleware"
 	"golang_project/internal/models"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // Register : Seeker
 func SeekerRegister(w http.ResponseWriter, r *http.Request) {
-	// Define a struct to handle the request body
 	var req struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
-	// Decode the request body into the struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Validate required fields
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = strings.TrimSpace(req.Email)
+	req.Password = strings.TrimSpace(req.Password)
+
 	if req.Name == "" || req.Email == "" || req.Password == "" {
-		http.Error(w, "All fields are required", http.StatusBadRequest)
+		http.Error(w, "All fields are required", http.StatusUnprocessableEntity)
 		return
 	}
 
-	// Check if the email is already registered
 	var existingUser models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		http.Error(w, "Email is already registered", http.StatusConflict)
 		return
 	}
 
-	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
-	// Create the user model
-	user := models.User{
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Role:     "seeker", // Explicitly set the role
-	}
+	if err := database.DB.Transaction(func(tx *gorm.DB) error {
 
-	// Use a database transaction
-	tx := database.DB.Begin()
-	if tx.Error != nil {
-		http.Error(w, "Failed to start database transaction", http.StatusInternalServerError)
+		user := models.User{
+			Email:    req.Email,
+			Password: string(hashedPassword),
+			Role:     "seeker",
+		}
+
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+
+		// Create the seeker profile
+		seeker := models.Seeker{
+			UserID: user.ID,
+			Name:   req.Name,
+		}
+
+		if err := tx.Create(&seeker).Error; err != nil {
+			return err // Transaction will automatically rollback on error
+		}
+
+		return nil
+	}); err != nil {
+		http.Error(w, "Failed to register new seeker", http.StatusInternalServerError)
 		return
 	}
 
-	if err := tx.Create(&user).Error; err != nil {
-		tx.Rollback()
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
-		return
-	}
-
-	profile := models.Profile{
-		UserID: user.ID,
-	}
-
-	if err := tx.Create(&profile).Error; err != nil {
-		tx.Rollback()
-		http.Error(w, "Failed to create profile", http.StatusInternalServerError)
-		return
-	}
-
-	// Commit the transaction
-	if err := tx.Commit().Error; err != nil {
-		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
 }
 
-// Register : Employer
 func EmployerRegister(w http.ResponseWriter, r *http.Request) {
-	// Define a structure to handle the nested request body
 	var req struct {
-		User    models.User    `json:"user"`
-		Company models.Company `json:"company"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Location string `json:"location"`
 	}
 
-	// Decode the request body into the struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Validate required fields
-	if req.User.Name == "" || req.User.Email == "" || req.User.Password == "" ||
-		req.Company.Name == "" || req.Company.Description == "" || req.Company.Location == "" {
-		http.Error(w, "All fields are required", http.StatusBadRequest)
+	req.Name = strings.TrimSpace(req.Name)
+	req.Email = strings.TrimSpace(req.Email)
+	req.Password = strings.TrimSpace(req.Password)
+	req.Location = strings.TrimSpace(req.Location)
+
+	if req.Name == "" || req.Email == "" || req.Password == "" || req.Location == "" {
+		http.Error(w, "All fields are required", http.StatusUnprocessableEntity)
 		return
 	}
 
-	// Check if the email is already registered
 	var existingUser models.User
-	if err := database.DB.Where("email = ?", req.User.Email).First(&existingUser).Error; err == nil {
+	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err != nil {
 		http.Error(w, "Email is already registered", http.StatusConflict)
 		return
 	}
 
-	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.User.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
-	req.User.Password = string(hashedPassword)
-	req.User.Role = "employer"
+	if err := database.DB.Transaction(func(tx *gorm.DB) error {
 
-	// Use a database transaction
-	tx := database.DB.Begin() // Start transaction
-	if tx.Error != nil {
-		http.Error(w, "Failed to start database transaction", http.StatusInternalServerError)
+		user := models.User{
+			Email:    req.Email,
+			Password: string(hashedPassword),
+			Role:     "employer",
+		}
+
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+
+		employer := models.Employer{
+			UserID:   user.ID,
+			Name:     req.Name,
+			Location: req.Location,
+		}
+
+		if err := tx.Create(&employer).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		http.Error(w, "Failed to register new employer", http.StatusInternalServerError)
 		return
 	}
 
-	// Save user to the database
-	if err := tx.Create(&req.User).Error; err != nil {
-		tx.Rollback() // Rollback the transaction if there is an error
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
-		return
-	}
-
-	// Associate the company with the user
-	req.Company.UserID = req.User.ID
-
-	// Save company to the database
-	if err := tx.Create(&req.Company).Error; err != nil {
-		tx.Rollback()
-		http.Error(w, "Failed to create company", http.StatusInternalServerError)
-		return
-	}
-
-	// Commit the transaction
-	if err := tx.Commit().Error; err != nil {
-		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Employer registered successfully"})
 }
 
-// Login handles user login and JWT generation.
 func Login(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
 		Email    string `json:"email"`
@@ -174,27 +158,32 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find user by email
+	credentials.Email = strings.TrimSpace(credentials.Email)
+	credentials.Password = strings.TrimSpace(credentials.Password)
+
+	if credentials.Email == "" || credentials.Password == "" {
+		http.Error(w, "Email and password are required", http.StatusUnprocessableEntity)
+		return
+	}
+
 	var user models.User
-	if err := database.DB.Preload("Company").Where("email = ?", credentials.Email).First(&user).Error; err != nil {
+	if err := database.DB.Where("email = ?", credentials.Email).First(&user).Error; err != nil {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	// Generate Access Token (valid for 1 day)
-	accessToken, err := auth.GenerateToken(user.ID, user.Company.ID, string(user.Role), 24*time.Hour)
+	accessToken, err := auth.GenerateToken(user.ID, string(user.Role), 24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return
 	}
 
-	refreshToken, err := auth.GenerateToken(user.ID, user.Company.ID, string(user.Role), 7*24*time.Hour)
+	refreshToken, err := auth.GenerateToken(user.ID, string(user.Role), 7*24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
 		return
@@ -205,51 +194,80 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Value:    refreshToken,
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 		Path:     "/",
 	})
 
+	// Response success
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login is successfully", "access_token": accessToken})
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":      "Login successful",
+		"access_token": accessToken,
+	})
 }
 
-// AuthMe handles the authenticated user info retrieval.
 func AuthMe(w http.ResponseWriter, r *http.Request) {
-
+	// Ambil data user dari JWT Token (Middleware)
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	userID, ok := claims["user_id"].(float64)
+	// Ambil user_id dari token claims
+	userIDFloat, ok := claims["user_id"].(float64)
 	if !ok {
 		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 		return
 	}
+	userID := uint(userIDFloat)
 
-	var user models.User
-	if err := database.DB.Preload("Company").Where("ID = ?", uint(userID)).First(&user).Error; err != nil {
-		http.Error(w, "User not found", http.StatusUnauthorized)
+	userRole, ok := claims["role"].(string)
+	if !ok {
+		http.Error(w, "Invalid role claims", http.StatusUnauthorized)
 		return
 	}
 
-	var companyID *uint
-	var companyName *string
-	if user.Company.ID != 0 {
-		companyID = &user.Company.ID
-		companyName = &user.Company.Name
+	var response map[string]interface{}
+
+	if userRole == "seeker" {
+		var seeker models.Seeker
+		if err := database.DB.Preload("User").Where("user_id = ?", userID).First(&seeker).Error; err != nil {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+			return
+		}
+
+		// Return data seeker
+		response = map[string]interface{}{
+			"user_id": seeker.UserID,
+			"email":   seeker.User.Email,
+			"name":    seeker.Name,
+			"role":    userRole,
+		}
+
+	} else if userRole == "employer" {
+		var employer models.Employer
+		if err := database.DB.Preload("User").Where("user_id = ?", userID).First(&employer).Error; err != nil {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+			return
+		}
+
+		// Return data employer
+		response = map[string]interface{}{
+			"user_id":      employer.UserID,
+			"email":        employer.User.Email,
+			"role":         userRole,
+			"company_id":   employer.ID,
+			"company_name": employer.Name,
+		}
+
+	} else {
+		http.Error(w, "Invalid user role", http.StatusUnauthorized)
+		return
 	}
 
-	response := map[string]interface{}{
-		"user_id":      user.ID,
-		"email":        user.Email,
-		"name":         user.Name,
-		"role":         user.Role,
-		"company_id":   companyID,
-		"company_name": companyName,
-	}
-
+	// Response sukses
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
@@ -268,13 +286,12 @@ func GetRefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := auth.GenerateToken(uint(claims["user_id"].(float64)), uint(claims["company_id"].(float64)), claims["role"].(string), 24*time.Hour)
+	accessToken, err := auth.GenerateToken(uint(claims["user_id"].(float64)), claims["role"].(string), 24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with the new access token
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
 }

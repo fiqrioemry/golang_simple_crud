@@ -38,6 +38,7 @@ func main() {
 	// Public Routes
 	router.HandleFunc("/api/jobs", handlers.GetAllJobs).Methods("GET")
 	router.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")
+	router.HandleFunc("/api/company/{id}", handlers.GetEmployerCompanyProfile).Methods("GET")
 
 	// Protected Routes with JWT Middleware
 	protected := router.PathPrefix("/").Subrouter()
@@ -57,12 +58,13 @@ func main() {
 	protected.HandleFunc("/api/employer/jobs/{id}", handlers.UpdateJob).Methods("PUT")
 	protected.HandleFunc("/api/employer/jobs/{id}", handlers.DeleteJob).Methods("DELETE")
 	protected.HandleFunc("/api/employer/jobs", handlers.GetAllEmployerPostedJobs).Methods("GET")
+	protected.HandleFunc("/api/employer/profile", handlers.GetUserEmployerProfile).Methods("GET")
+	protected.HandleFunc("/api/employer/profile", handlers.UpdateUserEmployerProfile).Methods("PUT")
 	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.UpdateApplicationStatus).Methods("PUT")
 	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.GetEmployerJobApplications).Methods("GET")
 
-	// cors configuration
 	client_host := os.Getenv("CLIENT_HOST")
-
+	// cors config
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{client_host},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

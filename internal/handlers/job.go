@@ -19,6 +19,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		Type        string   `json:"type"`
 		Skills      []string `json:"skills"`
 		Experience  string   `json:"experience"`
+		Salary      float64  `json:"salary"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -26,7 +27,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Title == "" || req.Description == "" || req.Location == "" || req.Type == "" || req.Experience == "" || len(req.Skills) == 0 {
+	if req.Title == "" || req.Description == "" || req.Location == "" || req.Type == "" || req.Salary <= 0 || req.Experience == "" || len(req.Skills) == 0 {
 		http.Error(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
@@ -43,23 +44,28 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ambil klaim dari middleware JWT
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
 		return
 	}
 
-	companyIDFloat, ok := claims["company_id"].(float64)
+	userID, ok := claims["user_id"].(float64)
 	if !ok {
-		http.Error(w, "Invalid token claims: missing company_id", http.StatusUnauthorized)
+		http.Error(w, "Invalid token claims: missing user_id", http.StatusUnauthorized)
 		return
 	}
-	companyID := uint(companyIDFloat)
+
+	var employer models.Employer
+	if err := database.DB.Where("user_id = ?", uint(userID)).First(&employer).Error; err != nil {
+		http.Error(w, "Employer Profile not found", http.StatusNotFound)
+		return
+	}
 
 	job := models.Job{
-		CompanyID:   companyID,
+		EmployerID:  employer.ID,
 		Title:       req.Title,
+		Salary:      req.Salary,
 		Description: req.Description,
 		Location:    req.Location,
 		Type:        req.Type,
@@ -75,7 +81,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Job created successfully",
-		"job_id":  job.ID,
+		"payload": job,
 	})
 }
 
@@ -86,24 +92,16 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobID := mux.Vars(r)["id"]
-
-	var job models.Job
-	if err := database.DB.First(&job, jobID).Error; err != nil {
-		http.Error(w, "Job not found or no longer exist", http.StatusNotFound)
-		return
-	}
-
-	companyID := uint(claims["company_id"].(float64))
-
-	if job.CompanyID != companyID {
-		http.Error(w, "Unauthorized: Cannot update job of another employer", http.StatusForbidden)
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		http.Error(w, "Invalid token claims: missing user_id", http.StatusUnauthorized)
 		return
 	}
 
 	var req struct {
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
+		Salary      float64  `json:"salary"`
 		Location    string   `json:"location"`
 		Type        string   `json:"type"`
 		Skills      []string `json:"skills"`
@@ -115,7 +113,7 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Title == "" || req.Description == "" || req.Location == "" || req.Type == "" || req.Experience == "" || len(req.Skills) == 0 {
+	if req.Title == "" || req.Description == "" || req.Location == "" || req.Type == "" || req.Salary <= 0 || req.Experience == "" || len(req.Skills) == 0 {
 		http.Error(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
@@ -132,7 +130,27 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var employer models.Employer
+	if err := database.DB.Where("user_id = ?", uint(userID)).First(&employer).Error; err != nil {
+		http.Error(w, "Employer profile not found", http.StatusNotFound)
+		return
+	}
+
+	jobID := mux.Vars(r)["id"]
+
+	var job models.Job
+	if err := database.DB.First(&job, jobID).Error; err != nil {
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	if job.EmployerID != employer.ID {
+		http.Error(w, "Unauthorized: Cannot update job of another employer", http.StatusForbidden)
+		return
+	}
+
 	job.Title = req.Title
+	job.Salary = req.Salary
 	job.Description = req.Description
 	job.Location = req.Location
 	job.Type = req.Type
@@ -145,7 +163,7 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Job updated successfully"})
+	json.NewEncoder(w).Encode(map[string]interface{}{"message": "Job updated successfully", "payload": job})
 }
 
 func DeleteJob(w http.ResponseWriter, r *http.Request) {
