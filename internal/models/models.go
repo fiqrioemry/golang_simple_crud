@@ -67,6 +67,7 @@ type Job struct {
 	Type         string        `gorm:"size:20;not null"`
 	Experience   string        `gorm:"size:20;not null"`
 	Skills       []string      `gorm:"serializer:json"`
+	IsActive     bool          `gorm:"default:true"`
 	Employer     Employer      `gorm:"foreignKey:EmployerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Applications []Application `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

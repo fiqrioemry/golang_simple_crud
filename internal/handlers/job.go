@@ -71,6 +71,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		Type:        req.Type,
 		Skills:      req.Skills,
 		Experience:  req.Experience,
+		IsActive:    true,
 	}
 
 	if err := database.DB.Create(&job).Error; err != nil {
@@ -78,6 +79,7 @@ func CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Respond with success
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Job created successfully",
@@ -106,6 +108,7 @@ func UpdateJob(w http.ResponseWriter, r *http.Request) {
 		Type        string   `json:"type"`
 		Skills      []string `json:"skills"`
 		Experience  string   `json:"experience"`
+		IsActive    bool     `json:isActive`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
