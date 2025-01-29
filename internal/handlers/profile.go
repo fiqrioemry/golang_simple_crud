@@ -5,6 +5,7 @@ import (
 	"golang_project/internal/database"
 	"golang_project/internal/middleware"
 	"golang_project/internal/models"
+	"golang_project/internal/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -112,6 +113,12 @@ func UpdateSeekerProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := uint(userIDFloat)
 
+	err = r.ParseMultipartForm(10 << 20) // max 10mb
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
 	var req struct {
 		Name     string     `json:"name"`
 		Bio      string     `json:"bio,omitempty"`
@@ -120,52 +127,64 @@ func UpdateSeekerProfile(w http.ResponseWriter, r *http.Request) {
 		Gender   string     `json:"gender,omitempty"`
 		Birthday *time.Time `json:"birthday,omitempty"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
 
-	// Trim the name field and validate
-	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
+	if r.FormValue("name") == "" {
 		http.Error(w, "Name is required", http.StatusBadRequest)
 		return
 	}
 
-	// Validate gender: it should be either "male" or "female"
+	req.Name = strings.TrimSpace(r.FormValue("name"))
+	req.Bio = r.FormValue("bio")
+	req.Resume = r.FormValue("resume")
+	req.Gender = r.FormValue("gender")
+
 	validGenders := map[string]bool{"male": true, "female": true}
 	if req.Gender != "" && !validGenders[req.Gender] {
 		http.Error(w, "Invalid gender. Must be one of [male, female]", http.StatusBadRequest)
 		return
 	}
 
-	// Find the seeker by userID
+	var avatarURL string
+	file, fileHeader, err := r.FormFile("avatar")
+	if err == nil {
+		defer file.Close()
+		avatarURL, err = utils.UploadMediaToCloudinary(file, fileHeader)
+		if err != nil {
+			http.Error(w, "Failed to upload avatar to Cloudinary", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	var seeker models.Seeker
 	if err := database.DB.Where("user_id = ?", userID).Take(&seeker).Error; err != nil {
 		http.Error(w, "Seeker Profile not found", http.StatusNotFound)
 		return
 	}
 
-	// Update the seeker profile fields
 	seeker.Name = req.Name
 	seeker.Bio = req.Bio
 	seeker.Resume = req.Resume
 	seeker.Skills = req.Skills
-	seeker.Gender = req.Gender // Update the Gender
+	seeker.Gender = req.Gender
 	seeker.Birthday = req.Birthday
+
+	if avatarURL != "" {
+		seeker.Avatar = avatarURL
+	}
+
 	seeker.UpdatedAt = time.Now()
 
-	// Save the updated seeker profile
 	if err := database.DB.Save(&seeker).Error; err != nil {
 		http.Error(w, "Failed to update seeker profile", http.StatusInternalServerError)
 		return
 	}
 
-	// Return a success message
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{"message": "Seeker profile updated successfully", "payload": seeker})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Seeker profile updated successfully",
+		"payload": seeker,
+	})
 }
-
 func GetEmployerProfile(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := middleware.GetUserFromContext(r)
@@ -214,31 +233,66 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := uint(userIDFloat)
 
+	err = r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
 		Location    string `json:"location"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
 
-	req.Name = strings.TrimSpace(req.Name)
-	if req.Name == "" {
+	if r.FormValue("name") == "" {
 		http.Error(w, "Company name is required", http.StatusBadRequest)
 		return
 	}
 
+	req.Name = strings.TrimSpace(r.FormValue("name"))
+	req.Description = r.FormValue("description")
+	req.Location = r.FormValue("location")
+
+	// Ambil employer dari database
 	var employer models.Employer
 	if err := database.DB.Where("user_id = ?", userID).Take(&employer).Error; err != nil {
 		http.Error(w, "Employer Profile not found", http.StatusNotFound)
 		return
 	}
 
+	var avatarURL string
+	file, fileHeader, err := r.FormFile("avatar")
+	if err == nil {
+		defer file.Close()
+		avatarURL, err = utils.UploadMediaToCloudinary(file, fileHeader)
+		if err != nil {
+			http.Error(w, "Failed to upload avatar to Cloudinary", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	var pictureURL string
+	file, fileHeader, err = r.FormFile("picture")
+	if err == nil {
+		defer file.Close()
+		pictureURL, err = utils.UploadMediaToCloudinary(file, fileHeader)
+		if err != nil {
+			http.Error(w, "Failed to upload picture to Cloudinary", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Perbarui profil employer
 	employer.Name = req.Name
 	employer.Location = req.Location
 	employer.Description = req.Description
+	if avatarURL != "" {
+		employer.Avatar = avatarURL
+	}
+	if pictureURL != "" {
+		employer.Picture = pictureURL
+	}
 	employer.UpdatedAt = time.Now()
 
 	if err := database.DB.Save(&employer).Error; err != nil {
@@ -247,7 +301,10 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{"message": "Employer profile updated successfully", "payload": employer})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Employer profile updated successfully",
+		"payload": employer,
+	})
 }
 
 func AddUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
