@@ -199,7 +199,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	// Response success
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":      "Login successful",
@@ -208,14 +207,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func AuthMe(w http.ResponseWriter, r *http.Request) {
-	// Ambil data user dari JWT Token (Middleware)
+
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Ambil user_id dari token claims
 	userIDFloat, ok := claims["user_id"].(float64)
 	if !ok {
 		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
@@ -238,7 +236,6 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Return data seeker
 		response = map[string]interface{}{
 			"user_id": seeker.UserID,
 			"email":   seeker.User.Email,
@@ -253,7 +250,6 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Return data employer
 		response = map[string]interface{}{
 			"user_id":      employer.UserID,
 			"email":        employer.User.Email,
@@ -267,7 +263,6 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Response sukses
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
@@ -294,4 +289,23 @@ func GetRefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Unix(0, 0),
+		Path:     "/",
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Logout successful",
+	})
 }

@@ -31,6 +31,7 @@ func main() {
 
 	// Authentication Routes
 	router.HandleFunc("/api/login", handlers.Login).Methods("POST")
+	router.HandleFunc("/api/logout", handlers.Logout).Methods("POST")
 	router.HandleFunc("/api/refresh", handlers.GetRefreshToken).Methods("POST")
 	router.HandleFunc("/api/register/seeker", handlers.SeekerRegister).Methods("POST")
 	router.HandleFunc("/api/register/employer", handlers.EmployerRegister).Methods("POST")
