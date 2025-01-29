@@ -104,7 +104,7 @@ func EmployerRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var existingUser models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err != nil {
+	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		http.Error(w, "Email is already registered", http.StatusConflict)
 		return
 	}

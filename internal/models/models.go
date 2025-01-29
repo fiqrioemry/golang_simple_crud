@@ -24,10 +24,10 @@ type Seeker struct {
 	Gender       string        `gorm:"size:20"`
 	Bio          string        `gorm:"type:text"`
 	Resume       string        `gorm:"type:text"`
-	Birthday     time.Time     `gorm:"type:date"`
+	Birthday     *time.Time    `gorm:"type:date"`
 	Skills       []string      `gorm:"serializer:json"`
 	Experience   []Experience  `gorm:"foreignKey:SeekerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Applications []Application `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Applications []Application `gorm:"foreignKey:SeekerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	User         User          `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
