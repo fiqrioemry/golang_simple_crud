@@ -65,7 +65,7 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var applications []models.Application
-	if err := database.DB.Preload("User").Preload("Seeker").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
+	if err := database.DB.Preload("Seeker.User").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
@@ -79,8 +79,8 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 		applicationData := map[string]interface{}{
 			"id":         application.ID,
 			"user_id":    application.UserID,
-			"name":       application,
-			"email":      application.User.Email,
+			"name":       application.Seeker.Name,
+			"email":      application.Seeker.User.Email,
 			"status":     application.Status,
 			"created_at": application.CreatedAt,
 			"updated_at": application.UpdatedAt,
@@ -92,7 +92,7 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
+func GetSeekerJobApplications(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "seeker" {
@@ -107,7 +107,7 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var applications []models.Application
-	if err := database.DB.Preload("Job.Applications").Preload("Job.Company").Where("user_id = ?", uint(userID)).Find(&applications).Error; err != nil {
+	if err := database.DB.Preload("Job.Applications").Preload("Job.Employer").Where("user_id = ?", uint(userID)).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 	}
 	if len(applications) == 0 {
@@ -120,7 +120,7 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 		applicationData := map[string]interface{}{
 			"application_id":     applications.ID,
 			"job_id":             applications.JobID,
-			"company_name":       applications.Job.Company.Name,
+			"company_name":       applications.Job.Employer.Name,
 			"job_title":          applications.Job.Title,
 			"job_location":       applications.Job.Location,
 			"total_applications": len(applications.Job.Applications),
@@ -135,7 +135,7 @@ func GetSeekerJobApplication(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
-	// validasi input
+
 	var payload struct {
 		ApplicationIDs []uint `json:"application_ids"`
 		Status         string `json:"status"`
@@ -160,7 +160,6 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// cek otorisasi
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "employer" {
 		http.Error(w, "Unauthorized: Employer only", http.StatusUnauthorized)
@@ -175,14 +174,19 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	companyID := uint(claims["company_id"].(float64))
+	userID := uint(claims["user_id"].(float64))
 
-	if job.CompanyID != companyID {
+	var employer models.Employer
+	if err := database.DB.Where("user_id = ?", userID).First(&employer).Error; err != nil {
+		http.Error(w, "Employer Profile not found", http.StatusInternalServerError)
+		return
+	}
+
+	if job.EmployerID != employer.ID {
 		http.Error(w, "Unauthorized: Cannot update job of another employer", http.StatusForbidden)
 		return
 	}
 
-	// update status dari applicant
 	if err := database.DB.Model(&models.Application{}).
 		Where("id IN ?", payload.ApplicationIDs).
 		Update("status", payload.Status).Error; err != nil {
@@ -190,7 +194,6 @@ func UpdateApplicationStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// send response
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Application statuses updated successfully",

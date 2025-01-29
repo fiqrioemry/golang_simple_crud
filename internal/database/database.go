@@ -23,10 +23,10 @@ func ConnectDatabase() {
 
 	err = DB.AutoMigrate(
 		&models.User{},
-		&models.Company{},
+		&models.Employer{},
 		&models.Job{},
 		&models.Application{},
-		&models.Profile{},
+		&models.Seeker{},
 		&models.Experience{},
 	)
 	if err != nil {

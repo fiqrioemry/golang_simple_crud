@@ -38,7 +38,7 @@ func main() {
 	// Public Routes
 	router.HandleFunc("/api/jobs", handlers.GetAllJobs).Methods("GET")
 	router.HandleFunc("/api/jobs/{id}", handlers.GetJobByID).Methods("GET")
-	router.HandleFunc("/api/company/{id}", handlers.GetEmployerCompanyProfile).Methods("GET")
+	router.HandleFunc("/api/employer/{id}", handlers.GetEmployerCompanyProfile).Methods("GET")
 
 	// Protected Routes with JWT Middleware
 	protected := router.PathPrefix("/").Subrouter()
@@ -47,9 +47,9 @@ func main() {
 
 	// Seeker Routes
 	protected.HandleFunc("/api/jobs/{id}/apply", handlers.ApplyToJob).Methods("POST")
-	protected.HandleFunc("/api/seeker/profile", handlers.GetUserSeekerProfile).Methods("GET")
-	protected.HandleFunc("/api/seeker/profile", handlers.UpdateUserSeekerProfile).Methods("PUT")
-	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplication).Methods("GET")
+	protected.HandleFunc("/api/seeker/profile", handlers.GetSeekerProfile).Methods("GET")
+	protected.HandleFunc("/api/seeker/profile", handlers.UpdateSeekerProfile).Methods("PUT")
+	protected.HandleFunc("/api/seeker/applications", handlers.GetSeekerJobApplications).Methods("GET")
 	protected.HandleFunc("/api/seeker/profile/experience", handlers.AddUserSeekerExperience).Methods("POST")
 	protected.HandleFunc("/api/seeker/profile/experience/{id}", handlers.UpdateUserSeekerExperience).Methods("PUT")
 
@@ -58,13 +58,13 @@ func main() {
 	protected.HandleFunc("/api/employer/jobs/{id}", handlers.UpdateJob).Methods("PUT")
 	protected.HandleFunc("/api/employer/jobs/{id}", handlers.DeleteJob).Methods("DELETE")
 	protected.HandleFunc("/api/employer/jobs", handlers.GetAllEmployerPostedJobs).Methods("GET")
-	protected.HandleFunc("/api/employer/profile", handlers.GetUserEmployerProfile).Methods("GET")
-	protected.HandleFunc("/api/employer/profile", handlers.UpdateUserEmployerProfile).Methods("PUT")
+	protected.HandleFunc("/api/employer/profile", handlers.GetEmployerProfile).Methods("GET")
+	protected.HandleFunc("/api/employer/profile", handlers.UpdateEmployerProfile).Methods("PUT")
 	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.UpdateApplicationStatus).Methods("PUT")
 	protected.HandleFunc("/api/employer/jobs/{id}/applications", handlers.GetEmployerJobApplications).Methods("GET")
 
 	client_host := os.Getenv("CLIENT_HOST")
-	// cors config
+
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{client_host},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
