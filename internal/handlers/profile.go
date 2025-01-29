@@ -233,12 +233,14 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := uint(userIDFloat)
 
-	err = r.ParseMultipartForm(10 << 20)
+	// Parse form untuk menangani unggah file
+	err = r.ParseMultipartForm(10 << 20) // 10MB max file size
 	if err != nil {
 		http.Error(w, "Error parsing form", http.StatusBadRequest)
 		return
 	}
 
+	// Ambil data JSON dari form-data
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
@@ -300,13 +302,25 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Gunakan struct custom agar hanya field yang diperlukan yang dikirimkan
+	response := models.EmployerResponse{
+		ID:          employer.ID,
+		CreatedAt:   employer.CreatedAt,
+		UpdatedAt:   employer.UpdatedAt,
+		UserID:      employer.UserID,
+		Name:        employer.Name,
+		Avatar:      employer.Avatar,
+		Picture:     employer.Picture,
+		Description: employer.Description,
+		Location:    employer.Location,
+	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Employer profile updated successfully",
-		"payload": employer,
+		"payload": response,
 	})
 }
-
 func AddUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := middleware.GetUserFromContext(r)

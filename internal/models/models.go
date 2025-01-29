@@ -76,3 +76,15 @@ type Application struct {
 	Job      Job    `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Seeker   Seeker `gorm:"foreignKey:SeekerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
+
+type EmployerResponse struct {
+	ID          uint      `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UserID      uint      `json:"user_id"`
+	Name        string    `json:"name"`
+	Avatar      string    `json:"avatar"`
+	Picture     string    `json:"picture"`
+	Description string    `json:"description"`
+	Location    string    `json:"location"`
+}
