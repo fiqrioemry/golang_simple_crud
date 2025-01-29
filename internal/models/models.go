@@ -6,10 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Role digunakan sebagai tipe untuk peran pengguna
 type Role string
 
-// User mewakili model pengguna dalam sistem
 type User struct {
 	gorm.Model
 	Email    string `gorm:"unique;not null"`
@@ -17,7 +15,7 @@ type User struct {
 	Role     Role   `gorm:"not null;default:'seeker'"`
 }
 
-// Seeker mewakili pencari kerja
+// Seeker ini sebagai pencari kerja
 type Seeker struct {
 	gorm.Model
 	UserID       uint          `gorm:"unique;not null"`
@@ -33,7 +31,6 @@ type Seeker struct {
 	User         User          `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
-// Experience mewakili pengalaman kerja pencari kerja
 type Experience struct {
 	gorm.Model
 	SeekerID  uint      `gorm:"not null"`
@@ -43,7 +40,7 @@ type Experience struct {
 	EndDate   *time.Time
 }
 
-// Employer mewakili perusahaan yang membuka lowongan pekerjaan
+// Employer ini sebagai company
 type Employer struct {
 	gorm.Model
 	UserID      uint   `gorm:"unique;not null"`
@@ -56,7 +53,6 @@ type Employer struct {
 	User        User   `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
-// Job mewakili lowongan pekerjaan
 type Job struct {
 	gorm.Model
 	EmployerID   uint          `gorm:"not null"`
@@ -72,7 +68,6 @@ type Job struct {
 	Applications []Application `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
-// Application mewakili aplikasi pekerjaan oleh pencari kerja
 type Application struct {
 	gorm.Model
 	JobID  uint   `gorm:"not null"`
@@ -80,4 +75,5 @@ type Application struct {
 	Status string `gorm:"size:20;default:'Pending'"`
 	Job    Job    `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	User   User   `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Seeker Seeker `gorm:"foreignKey:SeekerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

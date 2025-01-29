@@ -11,42 +11,34 @@ import (
 )
 
 func ApplyToJob(w http.ResponseWriter, r *http.Request) {
-	// Validasi user dari JWT claims
 	claims, err := middleware.GetUserFromContext(r)
 	if err != nil || claims["role"] != "seeker" {
 		http.Error(w, "Unauthorized: Job seeker only", http.StatusUnauthorized)
 		return
 	}
 
-	// Ambil user_id dari klaim
 	userID := uint(claims["user_id"].(float64))
 
-	// Ambil job_id dari parameter URL
 	jobID := mux.Vars(r)["id"]
 
-	// Pastikan job dengan ID tersebut ada
 	var job models.Job
 	if err := database.DB.First(&job, jobID).Error; err != nil {
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
 
-	// Periksa apakah user sudah pernah apply ke job ini
 	var existingApplication models.Application
 	if err := database.DB.Where("job_id = ? AND user_id = ?", job.ID, userID).First(&existingApplication).Error; err == nil {
-		// Jika ditemukan (tidak ada error), berarti user sudah pernah apply
 		http.Error(w, "You have already applied for this job", http.StatusConflict)
 		return
 	}
 
-	// Jika belum pernah apply, buat aplikasi baru
 	application := models.Application{
 		JobID:  job.ID,
 		UserID: userID,
 		Status: "Pending",
 	}
 
-	// Simpan aplikasi ke database
 	if err := database.DB.Create(&application).Error; err != nil {
 		http.Error(w, "Failed to apply to job", http.StatusInternalServerError)
 		return
@@ -73,7 +65,7 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var applications []models.Application
-	if err := database.DB.Preload("User").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
+	if err := database.DB.Preload("User").Preload("Seeker").Where("job_id = ?", jobID).Find(&applications).Error; err != nil {
 		http.Error(w, "Failed to retrieve applications", http.StatusInternalServerError)
 		return
 	}
@@ -87,7 +79,7 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 		applicationData := map[string]interface{}{
 			"id":         application.ID,
 			"user_id":    application.UserID,
-			"name":       application.User.Name,
+			"name":       application,
 			"email":      application.User.Email,
 			"status":     application.Status,
 			"created_at": application.CreatedAt,
