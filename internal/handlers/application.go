@@ -27,16 +27,22 @@ func ApplyToJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var seeker models.Seeker
+	if err := database.DB.Where("user_id = ?", userID).First(&seeker).Error; err != nil {
+		http.Error(w, "Seeker profile not found", http.StatusNotFound)
+		return
+	}
+
 	var existingApplication models.Application
-	if err := database.DB.Where("job_id = ? AND user_id = ?", job.ID, userID).First(&existingApplication).Error; err == nil {
+	if err := database.DB.Where("job_id = ? AND seeker_id = ?", job.ID, seeker.ID).First(&existingApplication).Error; err == nil {
 		http.Error(w, "You have already applied for this job", http.StatusConflict)
 		return
 	}
 
 	application := models.Application{
-		JobID:  job.ID,
-		UserID: userID,
-		Status: "Pending",
+		JobID:    job.ID,
+		SeekerID: seeker.ID,
+		Status:   "Pending",
 	}
 
 	if err := database.DB.Create(&application).Error; err != nil {
@@ -78,7 +84,7 @@ func GetEmployerJobApplications(w http.ResponseWriter, r *http.Request) {
 	for _, application := range applications {
 		applicationData := map[string]interface{}{
 			"id":         application.ID,
-			"user_id":    application.UserID,
+			"user_id":    application.Seeker.UserID,
 			"name":       application.Seeker.Name,
 			"email":      application.Seeker.User.Email,
 			"status":     application.Status,

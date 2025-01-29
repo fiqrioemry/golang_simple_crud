@@ -70,10 +70,9 @@ type Job struct {
 
 type Application struct {
 	gorm.Model
-	JobID  uint   `gorm:"not null"`
-	UserID uint   `gorm:"not null"`
-	Status string `gorm:"size:20;default:'Pending'"`
-	Job    Job    `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	User   User   `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Seeker Seeker `gorm:"foreignKey:SeekerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	JobID    uint   `gorm:"not null"`
+	SeekerID uint   `gorm:"not null"`
+	Status   string `gorm:"size:20;default:'Pending'"`
+	Job      Job    `gorm:"foreignKey:JobID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Seeker   Seeker `gorm:"foreignKey:SeekerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
