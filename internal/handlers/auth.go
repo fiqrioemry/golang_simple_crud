@@ -237,10 +237,12 @@ func AuthMe(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response = map[string]interface{}{
+
 			"user_id": seeker.UserID,
-			"email":   seeker.User.Email,
 			"name":    seeker.Name,
+			"email":   seeker.User.Email,
 			"role":    userRole,
+			"avatar":  seeker.Avatar,
 		}
 
 	} else if userRole == "employer" {
