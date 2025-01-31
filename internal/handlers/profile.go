@@ -13,6 +13,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type EmployerResponse struct {
+	ID          uint      `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UserID      uint      `json:"user_id"`
+	Name        string    `json:"name"`
+	Avatar      string    `json:"avatar"`
+	Picture     string    `json:"picture"`
+	Description string    `json:"description"`
+	Location    string    `json:"location"`
+}
+
 func GetEmployerCompanyProfile(w http.ResponseWriter, r *http.Request) {
 	employerID := mux.Vars(r)["id"]
 
@@ -233,14 +245,12 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := uint(userIDFloat)
 
-	// Parse form untuk menangani unggah file
-	err = r.ParseMultipartForm(10 << 20) // 10MB max file size
+	err = r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w, "Error parsing form", http.StatusBadRequest)
 		return
 	}
 
-	// Ambil data JSON dari form-data
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
@@ -256,7 +266,6 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 	req.Description = r.FormValue("description")
 	req.Location = r.FormValue("location")
 
-	// Ambil employer dari database
 	var employer models.Employer
 	if err := database.DB.Where("user_id = ?", userID).Take(&employer).Error; err != nil {
 		http.Error(w, "Employer Profile not found", http.StatusNotFound)
@@ -285,7 +294,6 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Perbarui profil employer
 	employer.Name = req.Name
 	employer.Location = req.Location
 	employer.Description = req.Description
@@ -302,8 +310,7 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Gunakan struct custom agar hanya field yang diperlukan yang dikirimkan
-	response := models.EmployerResponse{
+	response := EmployerResponse{
 		ID:          employer.ID,
 		CreatedAt:   employer.CreatedAt,
 		UpdatedAt:   employer.UpdatedAt,
@@ -321,6 +328,7 @@ func UpdateEmployerProfile(w http.ResponseWriter, r *http.Request) {
 		"payload": response,
 	})
 }
+
 func AddUserSeekerExperience(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := middleware.GetUserFromContext(r)
