@@ -73,7 +73,6 @@ type Form struct {
 	UserID      uuid.UUID `gorm:"type:char(36);not null;index"`
 	Title       string    `gorm:"type:varchar(255);not null"`
 	Description string    `gorm:"type:text"`
-	Slug        string    `gorm:"type:varchar(100);uniqueIndex;not null"`
 	Type        string    `gorm:"type:varchar(50);not null"` // quiz, exam, survey, quisoner, diagnose form
 	IsActive    bool      `gorm:"default:true"`
 	Duration    *int

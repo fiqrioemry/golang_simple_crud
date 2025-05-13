@@ -8,7 +8,7 @@ import (
 )
 
 func AuthRoutes(r *gin.Engine, handler *handlers.AuthHandler) {
-	auth := r.Group("/api/auth")
+	auth := r.Group("/api/v1/auth")
 
 	auth.POST("/send-otp", handler.SendOTP)
 	auth.POST("/verify-otp", handler.VerifyOTP)
