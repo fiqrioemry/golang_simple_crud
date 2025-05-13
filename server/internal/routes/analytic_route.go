@@ -3,7 +3,8 @@ package routes
 import (
 	"server/internal/handlers"
 
-	"github.com/fiqrioemry/microservice-ecommerce/server/pkg/middleware"
+	"server/internal/middleware"
+
 	"github.com/gin-gonic/gin"
 )
 

@@ -36,13 +36,55 @@ func main() {
 	)
 
 	// ========== layer ==========
+	// ================== AUTH ========================
 	authRepo := repositories.NewAuthRepository(db)
 	authService := services.NewAuthService(authRepo)
 	authHandler := handlers.NewAuthHandler(authService)
-	// ========== Cron Job ==========
+
+	// =================== USER =======================
+	userRepo := repositories.NewUserRepository(db)
+	userService := services.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
+
+	// =============== QUEUE (DIAGNOSIS) ==============
+	queueRepo := repositories.NewQueueRepository(db)
+	queueService := services.NewQueueService(queueRepo)
+	queueHandler := handlers.NewQueueHandler(queueService)
+
+	// ===================== FORM =====================
+	formRepo := repositories.NewFormRepository(db)
+	formService := services.NewFormService(formRepo)
+	formHandler := handlers.NewFormHandler(formService)
+
+	// ===================== PAYMENT ===================
+	paymentRepo := repositories.NewPaymentRepository(db)
+	paymentService := services.NewPaymentService(paymentRepo, subscriptionRepo, authRepo)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
+
+	// ===================== ANALYTICS =================
+	analyticsRepo := repositories.NewAnalyticsRepository(db)
+	analyticsService := services.NewAnalyticsService(analyticsRepo)
+	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
+
+	// ===================== SUBMISSION ================
+	submissionRepo := repositories.NewSubmissionRepository(db)
+	submissionService := services.NewSubmissionService(submissionRepo)
+	submissionHandler := handlers.NewSubmissionHandler(submissionService)
+
+	// =================== ADMIN SUBSCRIPTION ===========
+	subscriptionRepo := repositories.NewSubscriptionRepository(db)
+	subscriptionService := services.NewSubscriptionService(subscriptionRepo)
+	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionService)
 
 	// ========== Route Binding ==========
 	routes.AuthRoutes(r, authHandler)
+	routes.UserRoutes(r, userHandler)
+	routes.PaymentRoutes(r, paymentHandler)
+	routes.FormRoutes(r, formHandler)
+	routes.QueueRoutes(r, queueHandler)
+	routes.AnalyticsRoutes(r, analyticsHandler)
+	routes.SubmissionRoutes(r, submissionHandler)
+	routes.SubscriptionRoutes(r, subscriptionHandler)
 
 	// ========== Start Server ==========
 	port := os.Getenv("PORT")

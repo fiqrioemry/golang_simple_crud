@@ -2,8 +2,8 @@ package routes
 
 import (
 	"server/internal/handlers"
+	"server/internal/middleware"
 
-	"github.com/fiqrioemry/microservice-ecommerce/server/pkg/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,9 +13,9 @@ func UserRoutes(r *gin.Engine, handler *handlers.UserHandler) {
 	user.GET("/profile", handler.GetUserProfile)
 	user.PUT("/profile", handler.UpdateUserProfile)
 	user.GET("/subscriptions", handler.GetMySubscription)
-	user.POST("/subscriptions", handler.CreateNewUserSubscription)
 	user.PUT("/subscriptions", handler.UpdateUserSubscription)
 	user.GET("/payments", handler.GetMyTransactionHistory)
 	user.POST("/forms", handler.GetMyForms)
 	user.POST("/forms/:id", handler.GetMyFormDetail)
+
 }

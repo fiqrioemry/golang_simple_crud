@@ -52,10 +52,13 @@ func InitDatabase() {
 		&models.SubscriptionTier{},
 		&models.Payment{},
 		&models.Form{},
+		&models.FormSetting{},
+		&models.FormSection{},
 		&models.Question{},
 		&models.Option{},
 		&models.Submission{},
 		&models.Answer{},
+		&models.Queue{},
 	); err != nil {
 		panic("Migration failed: " + err.Error())
 	}
