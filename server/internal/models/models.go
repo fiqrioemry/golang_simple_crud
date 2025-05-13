@@ -11,6 +11,7 @@ type User struct {
 	ID        uuid.UUID `gorm:"type:char(36);primaryKey" json:"id"`
 	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
 	Password  string    `gorm:"type:text;not null" json:"-"`
+	Role      string    `gorm:"type:text;not null" json:"-"`
 	Fullname  string    `gorm:"type:varchar(255);not null" json:"fullname"`
 	Avatar    string    `gorm:"type:varchar(255);not null" json:"avatar"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
@@ -73,7 +74,7 @@ type Form struct {
 	Title       string    `gorm:"type:varchar(255);not null"`
 	Description string    `gorm:"type:text"`
 	Slug        string    `gorm:"type:varchar(100);uniqueIndex;not null"`
-	Type        string    `gorm:"type:varchar(50);not null"`
+	Type        string    `gorm:"type:varchar(50);not null"` // quiz, exam, survey, quisoner, diagnose form
 	IsActive    bool      `gorm:"default:true"`
 	Duration    *int
 	CreatedAt   time.Time
@@ -84,20 +85,15 @@ type Form struct {
 	Submissions []Submission  `gorm:"foreignKey:FormID"`
 }
 type FormSetting struct {
-	ID                       uint      `gorm:"primaryKey"`
-	FormID                   uuid.UUID `gorm:"type:char(36);not null;uniqueIndex"`
-	LoginRequired            bool      `gorm:"default:false"`
-	ShowResultAfterSubmit    bool      `gorm:"default:false"`
-	AllowEditSubmission      bool      `gorm:"default:false"`
-	AllowMultipleSubmits     bool      `gorm:"default:true"`
-	EnableCaptcha            bool      `gorm:"default:false"`
-	IsPublic                 bool      `gorm:"default:true"`
-	PassingGrade             *float64
-	UseGrading               bool
-	LimitResponses           *int
-	MaxSubmissionsPerSession *int
-	StartAt                  *time.Time
-	EndAt                    *time.Time
+	ID                 uint      `gorm:"primaryKey"`
+	FormID             uuid.UUID `gorm:"type:char(36);not null;uniqueIndex"`
+	ShowResult         bool      `gorm:"default:true"`  // mengizinkan user untuk dapat melihat hasil secara langsung
+	MultipleSubmission bool      `gorm:"default:false"` // pengaturan apakah user yang sama dapat melakukan submission berulang
+	PassingGrade       *float64  `gorm:"default:0"`     // threshold untuk kelulusan khusus untuk quiz dan exam
+	Grading            bool      `gorm:"default:false"` // mengaktifkan sistem grading (khusus untuk quiz dan exam)
+	MaxSubmissions     *int      `gorm:"default:100"`   // jumlah responden yang dapat mengisi form
+	StartAt            *time.Time
+	EndAt              *time.Time
 }
 
 type FormSection struct {
@@ -131,15 +127,16 @@ type Option struct {
 }
 
 type Submission struct {
-	ID           uuid.UUID `gorm:"type:char(36);primaryKey"`
-	FormID       uuid.UUID `gorm:"type:char(36);not null;index"`
-	Email        string    `gorm:"type:varchar(100)"`
-	Verified     bool      `gorm:"default:false"`
-	IPAddress    *string   `gorm:"type:varchar(45)"`
-	UserAgent    *string   `gorm:"type:text"`
-	SessionToken *string   `gorm:"type:char(36);index"`
-	Score        *float64
-	SubmittedAt  time.Time
+	ID          uuid.UUID `gorm:"type:char(36);primaryKey"`
+	FormID      uuid.UUID `gorm:"type:char(36);not null;index"`
+	Email       string    `gorm:"type:varchar(100)"`
+	Score       *float64
+	SubmittedAt time.Time
+
+	// untuk identifikasi user agar tidak dapat melakukan spam dari form (jika formsetting diaktifkan)
+	IPAddress    *string `gorm:"type:varchar(45)"`
+	UserAgent    *string `gorm:"type:text"`
+	SessionToken *string `gorm:"type:char(36);index"`
 
 	Answers []Answer `gorm:"foreignKey:SubmissionID"`
 }
@@ -150,7 +147,12 @@ type Answer struct {
 	QuestionID   uuid.UUID `gorm:"type:char(36);not null;index"`
 	OptionID     *uint
 	TextAnswer   *string
+}
 
-	Submission Submission `gorm:"foreignKey:SubmissionID"`
-	Question   Question   `gorm:"foreignKey:QuestionID"`
+// opsional untuk fitur form diagnosa
+type Queue struct {
+	ID         uuid.UUID `gorm:"type:char(36);primaryKey"`
+	ResponseID uuid.UUID `gorm:"type:char(36);not null;index"`
+	QueuNumber int
+	Status     string `gorm:"type:varchar(20);default:'pending';check:status IN ('waiting','progress','done');not null"`
 }
