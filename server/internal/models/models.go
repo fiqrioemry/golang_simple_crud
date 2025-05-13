@@ -4,13 +4,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type User struct {
 	ID        uuid.UUID `gorm:"type:char(36);primaryKey" json:"id"`
-	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null"json:"email"`
-	Password  string    `gorm:"type:text;not null"json:"-"`
+	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
+	Password  string    `gorm:"type:text;not null" json:"-"`
 	Fullname  string    `gorm:"type:varchar(255);not null" json:"fullname"`
+	Avatar    string    `gorm:"type:varchar(255);not null" json:"avatar"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 
@@ -35,7 +37,6 @@ type UserSubscription struct {
 	ExpiresAt          time.Time `gorm:"not null"`
 	IsActive           bool      `gorm:"default:true"`
 	RemainingTokens    int       `gorm:"not null;default:0"`
-	LastResetAt        time.Time `gorm:"not null"`
 
 	User             User             `gorm:"foreignKey:UserID"`
 	SubscriptionTier SubscriptionTier `gorm:"foreignKey:SubscriptionTierID"`
@@ -73,24 +74,37 @@ type Form struct {
 	Slug      string    `gorm:"type:varchar(100);uniqueIndex;not null"`
 	Type      string    `gorm:"type:varchar(50);not null"`
 	IsActive  bool      `gorm:"default:true"`
-	Duration  *int      // in minutes, only for quiz
+	Duration  *int
 	CreatedAt time.Time
 
-	User        User          `gorm:"foreignKey:UserID"`
-	Questions   []Question    `gorm:"foreignKey:FormID"`
-	MenuItems   []MenuItem    `gorm:"foreignKey:FormID"`
-	Tickets     []QueueTicket `gorm:"foreignKey:FormID"`
-	Submissions []Submission  `gorm:"foreignKey:FormID"`
+	User        User         `gorm:"foreignKey:UserID"`
+	Questions   []Question   `gorm:"foreignKey:FormID"`
+	Submissions []Submission `gorm:"foreignKey:FormID"`
+}
+
+type FormSection struct {
+	ID        uuid.UUID `gorm:"type:char(36);primaryKey"`
+	UserID    uuid.UUID `gorm:"type:char(36);not null;index"`
+	Title     string    `gorm:"type:varchar(255);not null"`
+	Slug      string    `gorm:"type:varchar(100);uniqueIndex;not null"`
+	Type      string    `gorm:"type:varchar(50);not null"`
+	IsActive  bool      `gorm:"default:true"`
+	Duration  *int
+	CreatedAt time.Time
+
+	User        User         `gorm:"foreignKey:UserID"`
+	Questions   []Question   `gorm:"foreignKey:FormID"`
+	Submissions []Submission `gorm:"foreignKey:FormID"`
 }
 
 type Question struct {
 	ID         uuid.UUID `gorm:"type:char(36);primaryKey"`
 	FormID     uuid.UUID `gorm:"type:char(36);not null;index"`
 	Text       string    `gorm:"type:text;not null"`
-	Type       string    `gorm:"type:varchar(50);not null"` // short_text, paragraph, multiple_choice, etc.
+	Type       string    `gorm:"type:varchar(50);not null"`
 	IsRequired bool      `gorm:"default:false"`
-	Score      *int      // only for quiz
-	ImageURL   *string   `gorm:"type:varchar(255)"`
+	Score      *int
+	ImageURL   *string `gorm:"type:varchar(255)"`
 
 	Form    Form     `gorm:"foreignKey:FormID"`
 	Options []Option `gorm:"foreignKey:QuestionID"`
@@ -100,7 +114,8 @@ type Option struct {
 	ID         uint      `gorm:"primaryKey;autoIncrement"`
 	QuestionID uuid.UUID `gorm:"type:char(36);not null;index"`
 	Text       string    `gorm:"type:varchar(255);not null"`
-	IsCorrect  *bool     `gorm:"default:null"` // true only for quiz, nil for survey
+	ImageURL   *string   `gorm:"type:varchar(255)"`
+	IsCorrect  *bool     `gorm:"default:null"`
 
 	Question Question `gorm:"foreignKey:QuestionID"`
 }
@@ -110,7 +125,7 @@ type Submission struct {
 	FormID      uuid.UUID `gorm:"type:char(36);not null;index"`
 	Email       string    `gorm:"type:varchar(100)"`
 	Verified    bool      `gorm:"default:false"`
-	Score       *float64  // only for quiz
+	Score       *float64
 	SubmittedAt time.Time
 
 	Form    Form     `gorm:"foreignKey:FormID"`
@@ -121,39 +136,9 @@ type Answer struct {
 	ID           uuid.UUID `gorm:"type:char(36);primaryKey"`
 	SubmissionID uuid.UUID `gorm:"type:char(36);not null;index"`
 	QuestionID   uuid.UUID `gorm:"type:char(36);not null;index"`
-	OptionID     *uint     // if answer is multiple_choice
-	TextAnswer   *string   // if answer is short_text/paragraph
+	OptionID     *uint
+	TextAnswer   *string
 
 	Submission Submission `gorm:"foreignKey:SubmissionID"`
 	Question   Question   `gorm:"foreignKey:QuestionID"`
-}
-
-type MenuItem struct {
-	ID     uuid.UUID `gorm:"type:char(36);primaryKey"`
-	FormID uuid.UUID `gorm:"type:char(36);not null;index"`
-	Name   string    `gorm:"type:varchar(100);not null"`
-	Price  float64   `gorm:"not null"`
-
-	Form Form `gorm:"foreignKey:FormID"`
-}
-
-type QueueTicket struct {
-	ID        uuid.UUID `gorm:"type:char(36);primaryKey"`
-	FormID    uuid.UUID `gorm:"type:char(36);not null;index"`
-	TicketNo  int       `gorm:"not null"`
-	Name      string    `gorm:"type:varchar(100)"`
-	CreatedAt time.Time
-
-	OrderItems []OrderItem `gorm:"foreignKey:TicketID"`
-	Form       Form        `gorm:"foreignKey:FormID"`
-}
-
-type OrderItem struct {
-	ID       uint      `gorm:"primaryKey;autoIncrement"`
-	TicketID uuid.UUID `gorm:"type:char(36);not null;index"`
-	MenuID   uuid.UUID `gorm:"type:char(36);not null;index"`
-	Quantity int       `gorm:"not null;default:1"`
-
-	MenuItem    MenuItem    `gorm:"foreignKey:MenuID"`
-	QueueTicket QueueTicket `gorm:"foreignKey:TicketID"`
 }

@@ -45,9 +45,17 @@ func InitDatabase() {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
-	// migration
 	if err := DB.AutoMigrate(
 		&models.User{},
+		&models.Token{},
+		&models.UserSubscription{},
+		&models.SubscriptionTier{},
+		&models.Payment{},
+		&models.Form{},
+		&models.Question{},
+		&models.Option{},
+		&models.Submission{},
+		&models.Answer{},
 	); err != nil {
 		panic("Migration failed: " + err.Error())
 	}
