@@ -38,6 +38,10 @@ func (h *SubscriptionHandler) GetSubscriptionInfo(c *gin.Context) {
 func (h *SubscriptionHandler) CreateNewUserSubscription(c *gin.Context) {
 }
 
-// user menambahkan subscription ketika berhasil melakukan pembelian (mungkin bisa di transaksi saja)
+// mengurangi token pengguna setiap kali fitur AI digunakan
 func (h *SubscriptionHandler) UpdateUserSubscription(c *gin.Context) {
+}
+
+// mengurangi token pengguna setiap kali fitur AI digunakan
+func (h *SubscriptionHandler) ResetUserSubscription(c *gin.Context) {
 }

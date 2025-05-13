@@ -68,45 +68,57 @@ type Payment struct {
 }
 
 type Form struct {
-	ID        uuid.UUID `gorm:"type:char(36);primaryKey"`
-	UserID    uuid.UUID `gorm:"type:char(36);not null;index"`
-	Title     string    `gorm:"type:varchar(255);not null"`
-	Slug      string    `gorm:"type:varchar(100);uniqueIndex;not null"`
-	Type      string    `gorm:"type:varchar(50);not null"`
-	IsActive  bool      `gorm:"default:true"`
-	Duration  *int
-	CreatedAt time.Time
+	ID          uuid.UUID `gorm:"type:char(36);primaryKey"`
+	UserID      uuid.UUID `gorm:"type:char(36);not null;index"`
+	Title       string    `gorm:"type:varchar(255);not null"`
+	Description string    `gorm:"type:text"`
+	Slug        string    `gorm:"type:varchar(100);uniqueIndex;not null"`
+	Type        string    `gorm:"type:varchar(50);not null"`
+	IsActive    bool      `gorm:"default:true"`
+	Duration    *int
+	CreatedAt   time.Time
 
-	User        User         `gorm:"foreignKey:UserID"`
-	Questions   []Question   `gorm:"foreignKey:FormID"`
-	Submissions []Submission `gorm:"foreignKey:FormID"`
+	Setting     FormSetting   `gorm:"foreignKey:FormID"`
+	FormSection []FormSection `gorm:"foreignKey:FormID"`
+	Questions   []Question    `gorm:"foreignKey:FormID"`
+	Submissions []Submission  `gorm:"foreignKey:FormID"`
+}
+type FormSetting struct {
+	ID                       uint      `gorm:"primaryKey"`
+	FormID                   uuid.UUID `gorm:"type:char(36);not null;uniqueIndex"`
+	LoginRequired            bool      `gorm:"default:false"`
+	ShowResultAfterSubmit    bool      `gorm:"default:false"`
+	AllowEditSubmission      bool      `gorm:"default:false"`
+	AllowMultipleSubmits     bool      `gorm:"default:true"`
+	EnableCaptcha            bool      `gorm:"default:false"`
+	IsPublic                 bool      `gorm:"default:true"`
+	PassingGrade             *float64
+	UseGrading               bool
+	LimitResponses           *int
+	MaxSubmissionsPerSession *int
+	StartAt                  *time.Time
+	EndAt                    *time.Time
 }
 
 type FormSection struct {
-	ID        uuid.UUID `gorm:"type:char(36);primaryKey"`
-	UserID    uuid.UUID `gorm:"type:char(36);not null;index"`
-	Title     string    `gorm:"type:varchar(255);not null"`
-	Slug      string    `gorm:"type:varchar(100);uniqueIndex;not null"`
-	Type      string    `gorm:"type:varchar(50);not null"`
-	IsActive  bool      `gorm:"default:true"`
-	Duration  *int
-	CreatedAt time.Time
-
-	User        User         `gorm:"foreignKey:UserID"`
-	Questions   []Question   `gorm:"foreignKey:FormID"`
-	Submissions []Submission `gorm:"foreignKey:FormID"`
+	ID          uuid.UUID `gorm:"type:char(36);primaryKey"`
+	FormID      uuid.UUID `gorm:"type:char(36);primaryKey"`
+	Title       string    `gorm:"type:varchar(255);not null"`
+	Description string    `gorm:"type:text"`
+	Order       int
 }
 
 type Question struct {
-	ID         uuid.UUID `gorm:"type:char(36);primaryKey"`
-	FormID     uuid.UUID `gorm:"type:char(36);not null;index"`
-	Text       string    `gorm:"type:text;not null"`
-	Type       string    `gorm:"type:varchar(50);not null"`
-	IsRequired bool      `gorm:"default:false"`
+	ID         uuid.UUID  `gorm:"type:char(36);primaryKey"`
+	FormID     uuid.UUID  `gorm:"type:char(36);not null;index"`
+	SectionID  *uuid.UUID `gorm:"type:char(36);not null;index"`
+	Text       string     `gorm:"type:text;not null"`
+	Type       string     `gorm:"type:varchar(50);not null"`
+	IsRequired bool       `gorm:"default:false"`
+	Order      int
 	Score      *int
 	ImageURL   *string `gorm:"type:varchar(255)"`
 
-	Form    Form     `gorm:"foreignKey:FormID"`
 	Options []Option `gorm:"foreignKey:QuestionID"`
 }
 
@@ -116,19 +128,19 @@ type Option struct {
 	Text       string    `gorm:"type:varchar(255);not null"`
 	ImageURL   *string   `gorm:"type:varchar(255)"`
 	IsCorrect  *bool     `gorm:"default:null"`
-
-	Question Question `gorm:"foreignKey:QuestionID"`
 }
 
 type Submission struct {
-	ID          uuid.UUID `gorm:"type:char(36);primaryKey"`
-	FormID      uuid.UUID `gorm:"type:char(36);not null;index"`
-	Email       string    `gorm:"type:varchar(100)"`
-	Verified    bool      `gorm:"default:false"`
-	Score       *float64
-	SubmittedAt time.Time
+	ID           uuid.UUID `gorm:"type:char(36);primaryKey"`
+	FormID       uuid.UUID `gorm:"type:char(36);not null;index"`
+	Email        string    `gorm:"type:varchar(100)"`
+	Verified     bool      `gorm:"default:false"`
+	IPAddress    *string   `gorm:"type:varchar(45)"`
+	UserAgent    *string   `gorm:"type:text"`
+	SessionToken *string   `gorm:"type:char(36);index"`
+	Score        *float64
+	SubmittedAt  time.Time
 
-	Form    Form     `gorm:"foreignKey:FormID"`
 	Answers []Answer `gorm:"foreignKey:SubmissionID"`
 }
 
